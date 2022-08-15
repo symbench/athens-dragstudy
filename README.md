@@ -19,7 +19,7 @@ The benefit of this tool is that, instead of updating parameters and rebuilding 
 
 ## TODO
 - [ ] Add curve fitting
-- [ ] Clean up data format for studying multiple params (e.g. length vs length + prop)
-- [ ] Add option to add new vehicle from command line
+- [ ] Create data format for running experiments using files from Jenkins data.zip
+- [x] Clean up data format for studying multiple params (e.g. length vs length + prop)
 - [x] Specify vehicle, study parameters, number of runs
 - [x] Create command option to generate baseline results (original vehicle) with plots and mesh
