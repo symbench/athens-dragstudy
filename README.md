@@ -17,11 +17,14 @@ The benefit of this tool is that, instead of updating parameters and rebuilding 
 
 5. To add a new vehicle, create a directory named after the vehicle in the appropriate `uam` or `uav` directory and copy the  `designData.json` and `designParameters.json` files (this will be a command line option, eventually). Note `uam` and `uav` are still separated because of CAD part and parameter naming differences
 
-See the drag_model notes file for FAQs about the code
+6. It is also possible to run a drag study on a zip file which is output from Jenkins. To do this, move the zip file of interest to the `design_zips` folder. Then, from the command line, use the `--from-zip` argument along with the `--vehicle vehicle_name` argument where `vehicle_name` is the name of the zip folder of interest, without the ".zip" extension.
+
+See the drag_model notes file for FAQs about the code itself 
 
 ## TODO
 - [ ] Add curve fitting
-- [ ] Create data format for running experiments using files from Jenkins data.zip
+- [ ] Resolve positional changes in motors when changing lengths
+- [x] Create data format for running experiments using files from Jenkins data.zip
 - [x] Clean up data format for studying multiple params (e.g. length vs length + prop)
 - [x] Specify vehicle, study parameters, number of runs
 - [x] Create command option to generate baseline results (original vehicle) with plots and mesh
