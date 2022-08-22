@@ -13,15 +13,20 @@
 
 import glob
 import os
-import numpy as np
+from . import VEHICLES
 
 
 class DragDataset:
-    def __init__(vehicle: str, study_params: list = ["length"]):
+    """Aggregate csv files of drag results based on the passed"""
+
+    def __init__(vehicle: str, study_params: list = ['length']):
         pass
 
-    def collect_data(self):
+    def get_min_drag_params():
         pass
-        #  glob all files of relevant parameters and form into large numpy array
-        #  separate input parameters and drag values as x, y
-        #  return x, y
+
+    def get_max_drag_params():
+
+
+if __name__ == "__main__":
+    dd = DragDataset()

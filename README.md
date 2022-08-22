@@ -17,6 +17,8 @@ The benefit of this tool is that, instead of updating parameters and rebuilding 
 
 5. To add a new vehicle, create a directory named after the vehicle in the appropriate `uam` or `uav` directory and copy the  `designData.json` and `designParameters.json` files (this will be a command line option, eventually). Note `uam` and `uav` are still separated because of CAD part and parameter naming differences
 
+See the drag_model notes file for FAQs about the code
+
 ## TODO
 - [ ] Add curve fitting
 - [ ] Create data format for running experiments using files from Jenkins data.zip

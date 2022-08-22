@@ -1,0 +1,41 @@
+{
+  "t_cross_mp_top_prop": {
+    "WEIGHT": "0.831",
+    "HUB_THICKNESS": "118.10999999999999",
+    "PITCH": "127.0",
+    "MODEL": "62x5_2_3200_46_1150",
+    "DIAMETER": "1574.8",
+    "PERFORMANCE_FILE": "62x5_2_3200_46_1150.dat",
+    "SHAFT_DIAMETER": "47",
+    "DIRECTION": 1.0,
+    "PROP_TYPE": 1.0,
+    "CADPART": "para_prop.prt"
+  },
+  "t_cross_mp_top_motor": {
+    "LENGTH": "140.0",
+    "ESC_BEC_CLASS": "nan",
+    "WEIGHT": "35.0",
+    "COST": "0",
+    "KV": "5.25",
+    "POLES": "nan",
+    "MAX_CELLS": "217",
+    "CAN_DIAMETER": "381.0",
+    "KM": "1.5752254154908345",
+    "MODEL": "MAGiDRIVE150",
+    "ADAPTER_LENGTH": "nan",
+    "KT": "1.8189136353359467",
+    "ADAPTER_DIAMETER": "nan",
+    "MIN_CELLS": "108",
+    "PROP_SIZE_REC": "nan",
+    "INTERNAL_RESISTANCE": "1333.3333333333333",
+    "MAX_CURRENT": "300.0",
+    "MAX_POWER": "120000.0",
+    "SHAFT_DIAMETER": "47.0",
+    "CAN_LENGTH": "130.0",
+    "IO_IDLE_CURRENT_10V": "8.16",
+    "PROP_PITCH_REC": "nan",
+    "TOTAL_LENGTH": "203.0",
+    "CONTROL_CHANNEL": "1",
+    "CADPART": "para_motor.prt"
+  }
+}

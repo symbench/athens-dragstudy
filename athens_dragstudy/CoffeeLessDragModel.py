@@ -1713,7 +1713,7 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output):
     else:
         if stl_output and create_plot:
             return (drags, center, Con_Mesh, all_figs)
-        return (drags, center)
+        return (drags, center, None, None)
 
 
 if __name__ == "__main__":

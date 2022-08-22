@@ -1,0 +1,14 @@
+{
+  "cylinder_0": {
+    "PORT_THICKNESS": 75.0,
+    "BOTTOM_CONN_DISP": "0",
+    "DIAMETER": 100.0,
+    "LEFT_CONN_DISP": "0",
+    "TOP_CONN_DISP": "0",
+    "FRONT_ANGLE": 0.0,
+    "LENGTH": 2000.0,
+    "RIGHT_CONN_DISP": "0",
+    "WALL_THICKNESS": "3",
+    "CADPART": "fuse_cyl_ported.prt"
+  }
+}

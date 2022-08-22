@@ -1,0 +1,77 @@
+
+ #Metrics
+ Max_Hover_Time_(s)    0.00000000    
+ Max_Lateral_Speed_(m/s)    32.0000000    
+ Max_Flight_Distance_(m)    84994.8359    
+ Speed_at_Max_Flight_Distance_(m/s)    31.0000000    
+ Max_uc_at_Max_Flight_Distance   0.912063062    
+ Power_at_Max_Flight_Distance_(W)    107325.672    
+ Motor_amps_to_max_amps_ratio_at_Max_Flight_Distance   0.423155367    
+ Motor_power_to_max_power_ratio_at_Max_Flight_Distance   0.892434657    
+ Battery_amps_to_max_amps_ratio_at_Max_Flight_Distance    105.041679    
+ Distance_at_Max_Speed_(m)    34758.8906    
+ Power_at_Max_Speed_(W)    327282.531    
+ Motor_amps_to_max_amps_ratio_at_Max_Speed   0.464348167    
+ Motor_power_to_max_power_ratio_at_Max_Speed   0.979310274    
+ Battery_amps_to_max_amps_ratio_at_Max_Speed    265.140808    
+ Max_wing_segement_load_ratio  0.544655621    
+ Min_max_nontrim_signed_acceleration_error  -4.08767897E-04
+ Min_max_nontrim_signed_acceleration_error_Speed   33.0000000    
+
+ #Metrics
+ Max_Hover_Time_(s)    0.00000000    
+ Max_Lateral_Speed_(m/s)    33.0000000    
+ Max_Flight_Distance_(m)    58293.5586    
+ Speed_at_Max_Flight_Distance_(m/s)    28.0000000    
+ Max_uc_at_Max_Flight_Distance   0.917139232    
+ Power_at_Max_Flight_Distance_(W)    125147.188    
+ Motor_amps_to_max_amps_ratio_at_Max_Flight_Distance   0.363523185    
+ Motor_power_to_max_power_ratio_at_Max_Flight_Distance   0.766670406    
+ Battery_amps_to_max_amps_ratio_at_Max_Flight_Distance    138.334320    
+ Distance_at_Max_Speed_(m)    47343.8438    
+ Power_at_Max_Speed_(W)    215011.297    
+ Motor_amps_to_max_amps_ratio_at_Max_Speed   0.472276449    
+ Motor_power_to_max_power_ratio_at_Max_Speed   0.996030986    
+ Battery_amps_to_max_amps_ratio_at_Max_Speed    200.744171    
+ Max_wing_segement_load_ratio  0.623506606    
+ Min_max_nontrim_signed_acceleration_error  -2.96588987E-04
+ Min_max_nontrim_signed_acceleration_error_Speed   32.0000000    
+
+ #Metrics
+ Max_Hover_Time_(s)    0.00000000    
+ Max_Lateral_Speed_(m/s)    32.0000000    
+ Max_Flight_Distance_(m)    76726.5703    
+ Speed_at_Max_Flight_Distance_(m/s)    32.0000000    
+ Max_uc_at_Max_Flight_Distance   0.963055432    
+ Power_at_Max_Flight_Distance_(W)    129510.953    
+ Motor_amps_to_max_amps_ratio_at_Max_Flight_Distance   0.466851950    
+ Motor_power_to_max_power_ratio_at_Max_Flight_Distance   0.984590769    
+ Battery_amps_to_max_amps_ratio_at_Max_Flight_Distance    120.114845    
+ Distance_at_Max_Speed_(m)    76726.5703    
+ Power_at_Max_Speed_(W)    129510.953    
+ Motor_amps_to_max_amps_ratio_at_Max_Speed   0.466851950    
+ Motor_power_to_max_power_ratio_at_Max_Speed   0.984590769    
+ Battery_amps_to_max_amps_ratio_at_Max_Speed    120.114845    
+ Max_wing_segement_load_ratio  0.770819485    
+ Min_max_nontrim_signed_acceleration_error  -2.23438791E-03
+ Min_max_nontrim_signed_acceleration_error_Speed   34.0000000    
+
+  Hackathon            1
+  Path performance, flight path            5
+
+  Measures of flight path performance (distance in meters, time is seconds, speed in meters per second)
+
+  Flight path was not successfully traversed.
+
+ #Metrics 
+ Flight_distance    1.89999994E-02
+ Time_to_traverse_path    1.00000005E-03
+ Average_speed_to_traverse_path    19.0000000    
+ Maximimum_error_distance_during_flight    1.20517679E-10
+ Time_of_maximum_distance_error    1.00000005E-03
+ Location_of_maximum_distance_error    1.89999994E-02   0.00000000      -500.000000    
+ Velocity_at_time_of_maximum_distance_error    19.0000000       0.00000000       0.00000000    
+ Spatial_average_distance_error    1.20517679E-10
+ Maximum_ground_impact_speed    0.00000000    
+ Path_traverse_score_based_on_requirements    0.00000000    
+ Input_LQR_weights_Qp_Qv_Qav_Qang_R    1.00000000       1.00000000       1.00000000       1.00000000      0.100000001    

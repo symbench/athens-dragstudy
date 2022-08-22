@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from typing import Optional
 from athens_dragstudy import CoffeeLessDragModel as cdm
 from athens_dragstudy import fit
+from athens_dragstudy import DATA_PATH, UAM_DATA, UAV_DATA, UAV_VEHICLES, UAM_VEHICLES
 import time
 import csv
 import os
@@ -24,34 +25,24 @@ import json
 import random
 import time
 
-UAM_DATA = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), os.path.dirname(__file__), "data/uam")
-)
-UAV_DATA = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), os.path.dirname(__file__), "data/uav")
-)
+import zipfile
 
 
-# TODO: if you want a new vehicle to study it must go here
-UAM_VEHICLES = ["spade", "tbar_full", "tbar_double", "tbar_single", "tbar_minime", "tbar_steerwing"]
-UAV_VEHICLES = ["axe", "quad"]
-VALID_VEHICLES = UAM_VEHICLES + UAV_VEHICLES
+# # TODO: if you want a new vehicle to study it must go here
+# UAM_VEHICLES = [
+#     "spade",
+#     "tbar_full",
+#     "tbar_double",
+#     "tbar_single",
+#     "tbar_minime",
+#     "tbar_steerwing",
+#     "dummy",
+# ]
 
-print(UAV_DATA, UAM_DATA)
+# print(UAM_VEHICLES)
 
-
-class VehicleMeshBuilder:
-    """
-    get the drag model code that creates a vehicle mesh from the data and design parameters
-    the meshes alone might be interesting later
-    """
-
-    def __init__(self, vehicle):
-        pass
-        # assert vehicle in VALID_VEHICLES, f"vehicle {vehicle} is invalid! valid vehicles are: {VALID_VEHICLES}"
-
-    def build(self):
-        pass
+# UAV_VEHICLES = ["axe", "quad"]
+# VALID_VEHICLES = UAM_VEHICLES + UAV_VEHICLES
 
 
 class DragRunner:
@@ -61,11 +52,12 @@ class DragRunner:
         num_runs: int,
         study_params: list,
         run_baseline: bool = False,
+        from_zip: bool = False,
     ):
 
-        assert (
-            vehicle in VALID_VEHICLES
-        ), f"vehicle {vehicle} is invalid! valid vehicles are: {VALID_VEHICLES}"
+        # assert (
+        #     vehicle in VALID_VEHICLES
+        # ), f"vehicle {vehicle} is invalid! valid vehicles are: {VALID_VEHICLES}"
         self.vehicle = vehicle
 
         self.study_params = ["length"] if study_params is None else study_params
@@ -75,23 +67,83 @@ class DragRunner:
         #        self.study_params == ["all"], f"invalid entry for study_params! Must be [length | wing | prop | all]"
 
         self.num_runs = num_runs
-
-        if self.vehicle == "axe" or self.vehicle == "quad":
-            self.vehicle_type = "uav"
-            self.BASE_PATH = os.path.join(UAV_DATA, self.vehicle)
-            self.datafile = os.path.join(self.BASE_PATH, "designData.json")
-            self.paramfile = os.path.join(self.BASE_PATH, "designParameters.json")
-        else:
-            self.vehicle_type = "uam"
-            self.BASE_PATH = os.path.join(UAM_DATA, self.vehicle)
-            self.datafile = os.path.join(self.BASE_PATH, "designData.json")
-            self.paramfile = os.path.join(self.BASE_PATH, "designParameters.json")
-
-        self.datadict = json.loads(open(self.datafile).read())
-        assert self.datadict
-        self.paramdict = json.loads(open(self.paramfile).read())
-        assert self.paramdict
         self.run_baseline = run_baseline
+
+        if from_zip:  # read json data directly from jenkins build artifact
+            # get the param and json from the zip file
+
+            # when we are able to run UAVs through the pipeline, update this code
+
+            z = zipfile.ZipFile(
+                os.path.join(DATA_PATH, "design_zips", self.vehicle + ".zip")
+            )
+            with z.open("archive/result_1/designData.json") as f:
+                self.datadict = json.loads(f.read().decode("utf-8"))
+            # print(type(self.datadict))
+            with z.open("archive/result_1/designParameters.json") as f:
+                self.paramdict = json.loads(f.read().decode("utf-8"))
+            # print(type(self.paramdict))
+
+            self.vehicle_type = "uam"  # assume uam until proven otherwise
+            for struct_name, prop_dict in self.paramdict.items():
+                if "CADPART" in prop_dict and prop_dict["CADPART"] == "para_tube.prt":
+                    self.vehicle_type = "uav"
+
+            print(f"detected vehicle type: {self.vehicle_type}")
+            if self.vehicle_type == "uam":
+                self.BASE_PATH = os.path.join(UAM_DATA, self.vehicle)
+            else:
+                self.BASE_PATH = os.path.join(UAV_DATA, self.vehicle)
+
+        else:
+
+            if self.vehicle in UAV_VEHICLES:
+                self.vehicle_type = "uav"
+                self.BASE_PATH = os.path.join(UAV_DATA, self.vehicle)
+                self.datafile = os.path.join(self.BASE_PATH, "designData.json")
+                self.paramfile = os.path.join(self.BASE_PATH, "designParameters.json")
+            elif self.vehicle in UAM_VEHICLES:
+                self.vehicle_type = "uam"
+                self.BASE_PATH = os.path.join(UAM_DATA, self.vehicle)
+                self.datafile = os.path.join(self.BASE_PATH, "designData.json")
+                self.paramfile = os.path.join(self.BASE_PATH, "designParameters.json")
+
+            self.datadict = json.loads(open(self.datafile).read())
+            self.paramdict = json.loads(open(self.paramfile).read())
+        assert self.datadict
+        assert self.paramdict
+
+    def set_params_and_run_drag(self):
+        """Run the drag model with a specific set of parameters that come from
+        the parameter drag dataset object"""
+
+        run_params = {"leg": 95, "arm": 220}
+
+        for name in self.paramdict.keys():
+            item = name.split("_")[0]
+            if item in ["arm", "leg"]:
+                # print(
+                #     f"changing {name} from {self.paramdict[name]['LENGTH']} to {float(run_params[item])}"
+                # )
+                self.paramdict[name]["LENGTH"] = float(run_params[item])
+                print(name, self.paramdict[name]["LENGTH"])
+
+        include_wing = False
+        create_plot = False
+        debug = False
+        stl_output = False
+        drags, center, stl_mesh, plots = cdm.run_full(
+            self.datadict, self.paramdict, include_wing, create_plot, debug, stl_output
+        )
+
+        if not os.path.exists(os.path.join(self.BASE_PATH, "tmp")):
+            os.makedirs(os.path.join(self.BASE_PATH, "tmp"))
+
+        if stl_output:
+            stl_mesh.export(os.path.join(self.BASE_PATH, "tmp", "aircraft.stl"))
+
+        print(f"drags: {drags}")
+        print(f"centers: {center}")
 
     def run_dragmodel(self):
         """
@@ -100,22 +152,30 @@ class DragRunner:
 
         if self.run_baseline:  # run the analysis with the original parameters
             if not os.path.exists(os.path.join(self.BASE_PATH, "baseline")):
-                os.mkdir(os.path.join(self.BASE_PATH, "baseline"))
+                os.makedirs(os.path.join(self.BASE_PATH, "baseline"))
             else:
                 print(
                     f"baseline results for {self.vehicle} ({self.vehicle_type}) already exist, exiting"
                 )
                 return
 
-            print(f"running baseline drag model")
+            print("running baseline drag model")
+            include_wing = True
+            create_plot = True
+            debug = False
+            stl_output = True
+
             drags, center, stl_mesh, plots = cdm.run_full(
-                self.datafile,
-                self.paramfile,
-                True,  # include wing
-                True,  # create plot
-                False,  # debug
-                True,
-            )  # stl output
+                self.datadict,
+                self.paramdict,
+                include_wing,
+                create_plot,
+                debug,
+                stl_output,
+            )
+
+            print(drags)
+            print(center)
 
             with open(
                 os.path.join(self.BASE_PATH, "baseline", "drag_center.txt"), "w"
@@ -123,14 +183,21 @@ class DragRunner:
                 f.write(str(drags) + "\n")
                 f.write(str(center))
             print("wrote drag_center.txt")
-            stl_mesh.export(os.path.join(self.BASE_PATH, "baseline", "aircraft.stl"))
-            print("exported aircraft.stl")
 
-            for drxn, plot in list(zip(["x", "y", "z"], plots)):
-                plot.savefig(
-                    os.path.join(self.BASE_PATH, "baseline", f"drag_plot_{drxn}.png")
+            if stl_output:
+                stl_mesh.export(
+                    os.path.join(self.BASE_PATH, "baseline", "aircraft.stl")
                 )
-                print(f"wrote drag_plot_{drxn}.png")
+                print("exported aircraft.stl")
+
+            if create_plot:
+                for drxn, plot in list(zip(["x", "y", "z"], plots)):
+                    plot.savefig(
+                        os.path.join(
+                            self.BASE_PATH, "baseline", f"drag_plot_{drxn}.png"
+                        )
+                    )
+                    print(f"wrote drag_plot_{drxn}.png")
             return
 
         all_results = []
@@ -147,6 +214,7 @@ class DragRunner:
 
         total_time = 0
         for i in range(self.num_runs):
+
             if (i + 1) % 100 == 0 and i != 0:
                 print(
                     f"avg runtime after {i+1} iters: {round(total_time / (i+1), 3)}s/it"
@@ -165,9 +233,7 @@ class DragRunner:
             new_params = self.update_drag_input_params()
 
             for structure in new_params:
-                # print(new_params[structure])
                 for param_name, param_val in new_params[structure].items():
-                    # print(param_name, param_val)
                     if i == 0:  # only update header for first run
                         header_row.append(f"{structure}_{param_name}")
                     param_entries.append(param_val[1])  # the new value
@@ -199,9 +265,10 @@ class DragRunner:
             # print(result_row)
 
             all_results.append(result_row)
+        print(f"{self.num_runs} done in {total_time}")
 
         if not os.path.exists(os.path.join(self.BASE_PATH, "results")):
-            os.mkdir(os.path.join(self.BASE_PATH, "results"))
+            os.makedirs(os.path.join(self.BASE_PATH, "results"))
         with open(
             os.path.join(
                 self.BASE_PATH,
@@ -268,7 +335,7 @@ class DragRunner:
                     and properties["CADPART"] == cadpart
                 ):
                     # only change chords and span of symmetric wings for now, later thickness and taper
-                    #print(f"modifying wing span and chord of {structure}")
+                    # print(f"modifying wing span and chord of {structure}")
                     orig_c1 = properties["CHORD_1"]
                     orig_c2 = properties["CHORD_2"]
                     orig_span = properties["SPAN"]
@@ -317,22 +384,27 @@ def run():
         help="run the drag model for the original vehicle parameters",
     )
     parser.add_argument(
-        "--rand-length",
+        "--length",
         action="store_true",
         help="randomly change connector lengths in the design by a small amount",
     )
     parser.add_argument(
-        "--rand-wing",
+        "--wing",
         action="store_true",
         help="randomly change connector lengths in the design by a small amount",
     )
     parser.add_argument(
-        "--rand-prop",
+        "--prop",
         action="store_true",
         help="randomly change connector lengths in the design by a small amount",
     )
-    parser.add_argument("--runs", type=int, help="the number of drag runs to complete")
+    parser.add_argument(
+        "--runs", type=int, default=1, help="the number of drag runs to complete"
+    )
 
+    parser.add_argument(
+        "--from-zip", action="store_true", help="run a drag study on a design"
+    )
     args = parser.parse_args()
     print(args)
 
@@ -344,15 +416,16 @@ def run():
         sys.exit(0)
 
     study_params = []
-    if args.rand_length:
+    if args.length:
         study_params.append("length")
-    if args.rand_prop:
+    if args.prop:
         study_params.append("prop")
-    if args.rand_wing:
+    if args.wing:
         study_params.append("wing")
     print(f"study params are: {study_params}")
-    dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline)
-    dr.run_dragmodel()
+    dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip)
+    dr.set_params_and_run_drag()
+    # dr.run_dragmodel()
 
 
 if __name__ == "__main__":
