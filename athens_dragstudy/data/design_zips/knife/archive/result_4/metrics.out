@@ -1,0 +1,35 @@
+
+ #Metrics
+  No trim conditions were found
+ Min_max_nontrim_signed_acceleration_error -0.490736991    
+ Min_max_nontrim_signed_acceleration_error_Speed   17.0000000    
+
+ #Metrics
+  No trim conditions were found
+ Min_max_nontrim_signed_acceleration_error -0.486467779    
+ Min_max_nontrim_signed_acceleration_error_Speed   17.0000000    
+
+ #Metrics
+  No trim conditions were found
+ Min_max_nontrim_signed_acceleration_error -0.505151987    
+ Min_max_nontrim_signed_acceleration_error_Speed   16.0000000    
+
+  Hackathon            1
+  Path performance, flight path            5
+
+  Measures of flight path performance (distance in meters, time is seconds, speed in meters per second)
+
+  Flight path was not successfully traversed.
+
+ #Metrics 
+ Flight_distance    9.79999913E-06
+ Time_to_traverse_path    1.00000005E-03
+ Average_speed_to_traverse_path    9.79999918E-03
+ Maximimum_error_distance_during_flight    500.000000    
+ Time_of_maximum_distance_error    1.00000005E-03
+ Location_of_maximum_distance_error    1.89999994E-02   0.00000000      -500.000000    
+ Velocity_at_time_of_maximum_distance_error    19.0000000       0.00000000       0.00000000    
+ Spatial_average_distance_error    500.000000    
+ Maximum_ground_impact_speed    0.00000000    
+ Path_traverse_score_based_on_requirements    0.00000000    
+ Input_LQR_weights_Qp_Qv_Qav_Qang_R    1.00000000       1.00000000       1.00000000       1.00000000      0.100000001    

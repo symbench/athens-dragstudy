@@ -1419,10 +1419,10 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output):
                 poly = list()
                 for k, qq in enumerate(ang):  # For each AOA
                     N = [np.cos(np.deg2rad(qq)), 0, np.sin(np.deg2rad(qq))]
-                    print(
-                        f"poly element type: {type(trimesh.path.polygons.projected(mesh, N))}"
-                    )
-                    print(f"mesh type: {type(mesh)}")
+                    # print(
+                    #     f"poly element type: {type(trimesh.path.polygons.projected(mesh, N))}"
+                    # )
+                    # print(f"mesh type: {type(mesh)}")
                     poly.append(trimesh.path.polygons.projected(mesh, N))
                 spatial[q]["Cd"] = cd
                 spatial[q]["rarea"] = warea * np.ones([1, np.size(ang)])
@@ -1585,8 +1585,8 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output):
                     * np.tile(modder, [len(vel), 1])
                 )
 
-                print(f"spatial[q]['Drag'].shape: {spatial[q]['Drag'].shape}")
-                print(f"spatial[q]['Drag'][vp, ap]: {spatial[q]['Drag'][vp, ap]}")
+                #print(f"spatial[q]['Drag'].shape: {spatial[q]['Drag'].shape}")
+                #print(f"spatial[q]['Drag'][vp, ap]: {spatial[q]['Drag'][vp, ap]}")
                 #
                 Total_Drag = Total_Drag + spatial[q]["Drag"][vp, ap]
                 # I am including the wing drag to find the center of drag, otherwise it be heavily biased if the wing shields a large part of the body.

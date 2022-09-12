@@ -1,0 +1,20 @@
+{
+  "fuselage_1": {
+    "TAIL_DIAMETER": 200.0,
+    "SEAT_1_FB": 1000.0,
+    "SEAT_2_FB": 1000.0,
+    "LEFT_PORT_DISP": 0.0,
+    "FLOOR_HEIGHT": 150.0,
+    "SEAT_1_LR": -210.0,
+    "SPHERE_DIAMETER": 1520.0,
+    "BOTTOM_PORT_DISP": 300.0,
+    "PORT_THICKNESS": 100.0,
+    "RIGHT_PORT_DISP": 0.0,
+    "SEAT_2_LR": 210.0,
+    "MIDDLE_LENGTH": 750.0,
+    "TOP_PORT_DISP": 300.0,
+    "LENGTH": 2000.0,
+    "WALL_THICKNESS": "3",
+    "CADPART": "fuse_sphere_cone.prt"
+  }
+}

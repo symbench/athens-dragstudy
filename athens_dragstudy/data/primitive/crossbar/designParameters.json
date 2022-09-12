@@ -1,0 +1,62 @@
+{
+  "cross_bar_1": {
+    "PORT_THICKNESS": 75.0,
+    "BOTTOM_CONN_DISP": "0",
+    "DIAMETER": 100.0,
+    "LEFT_CONN_DISP": "0",
+    "TOP_CONN_DISP": "0",
+    "FRONT_ANGLE": 0.0,
+    "LENGTH": 100.0,
+    "RIGHT_CONN_DISP": "0",
+    "WALL_THICKNESS": "3",
+    "CADPART": "fuse_cyl_ported.prt"
+  },
+  "cross_bar_1_BOTTOM": {
+    "PORT_THICKNESS": 75.0,
+    "BOTTOM_CONN_DISP": "0",
+    "DIAMETER": 100.0,
+    "LEFT_CONN_DISP": "0",
+    "TOP_CONN_DISP": "0",
+    "FRONT_ANGLE": 0.0,
+    "LENGTH": 500.0,
+    "RIGHT_CONN_DISP": "0",
+    "WALL_THICKNESS": "3",
+    "CADPART": "fuse_cyl_ported.prt"
+  },
+  "cross_bar_1_RIGHT": {
+    "PORT_THICKNESS": 75.0,
+    "BOTTOM_CONN_DISP": "0",
+    "DIAMETER": 100.0,
+    "LEFT_CONN_DISP": "0",
+    "TOP_CONN_DISP": "0",
+    "FRONT_ANGLE": 0.0,
+    "LENGTH": 500.0,
+    "RIGHT_CONN_DISP": "0",
+    "WALL_THICKNESS": "3",
+    "CADPART": "fuse_cyl_ported.prt"
+  },
+  "cross_bar_1_TOP": {
+    "PORT_THICKNESS": 75.0,
+    "BOTTOM_CONN_DISP": "0",
+    "DIAMETER": 100.0,
+    "LEFT_CONN_DISP": "0",
+    "TOP_CONN_DISP": "0",
+    "FRONT_ANGLE": 0.0,
+    "LENGTH": 500.0,
+    "RIGHT_CONN_DISP": "0",
+    "WALL_THICKNESS": "3",
+    "CADPART": "fuse_cyl_ported.prt"
+  },
+  "cross_bar_1_LEFT": {
+    "PORT_THICKNESS": 75.0,
+    "BOTTOM_CONN_DISP": "0",
+    "DIAMETER": 100.0,
+    "LEFT_CONN_DISP": "0",
+    "TOP_CONN_DISP": "0",
+    "FRONT_ANGLE": 0.0,
+    "LENGTH": 500.0,
+    "RIGHT_CONN_DISP": "0",
+    "WALL_THICKNESS": "3",
+    "CADPART": "fuse_cyl_ported.prt"
+  }
+}

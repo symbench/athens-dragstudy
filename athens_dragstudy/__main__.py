@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from typing import Optional
 from athens_dragstudy import CoffeeLessDragModel as cdm
 from athens_dragstudy import fit
-from athens_dragstudy import DATA_PATH, UAM_DATA, UAV_DATA, UAV_VEHICLES, UAM_VEHICLES
+from athens_dragstudy import DATA_PATH, UAM_DATA, UAV_DATA, UAV_VEHICLES, UAM_VEHICLES, PRIMITIVE_DATA
 import time
 import csv
 import os
@@ -53,12 +53,17 @@ class DragRunner:
         study_params: list,
         run_baseline: bool = False,
         from_zip: bool = False,
+        primitive_struct: str = None
     ):
 
         # assert (
         #     vehicle in VALID_VEHICLES
         # ), f"vehicle {vehicle} is invalid! valid vehicles are: {VALID_VEHICLES}"
-        self.vehicle = vehicle
+        self.drag_subject = vehicle if primitive_struct is None else primitive_struct
+        self.vehicle = self.drag_subject
+
+        self.design_datafile = "designData.json"
+        self.design_paramfile = "designParameters.json"
 
         self.study_params = ["length"] if study_params is None else study_params
         # assert self.study_params == ["length"] or \
@@ -68,6 +73,9 @@ class DragRunner:
 
         self.num_runs = num_runs
         self.run_baseline = run_baseline
+        self.primitive_struct = primitive_struct
+        self.vehicle_type = None
+
 
         if from_zip:  # read json data directly from jenkins build artifact
             # get the param and json from the zip file
@@ -95,21 +103,25 @@ class DragRunner:
             else:
                 self.BASE_PATH = os.path.join(UAV_DATA, self.vehicle)
 
-        else:
+        elif primitive_struct is not None:
+            # get data from primitive folder and run drag
+            print(f"primitive drag study of struct: {primitive_struct}")
+            self.BASE_PATH = os.path.join(PRIMITIVE_DATA, primitive_struct)
+            print(self.BASE_PATH)
+        elif self.vehicle:
 
             if self.vehicle in UAV_VEHICLES:
                 self.vehicle_type = "uav"
-                self.BASE_PATH = os.path.join(UAV_DATA, self.vehicle)
-                self.datafile = os.path.join(self.BASE_PATH, "designData.json")
-                self.paramfile = os.path.join(self.BASE_PATH, "designParameters.json")
+                data = UAV_DATA
             elif self.vehicle in UAM_VEHICLES:
                 self.vehicle_type = "uam"
-                self.BASE_PATH = os.path.join(UAM_DATA, self.vehicle)
-                self.datafile = os.path.join(self.BASE_PATH, "designData.json")
-                self.paramfile = os.path.join(self.BASE_PATH, "designParameters.json")
-
-            self.datadict = json.loads(open(self.datafile).read())
-            self.paramdict = json.loads(open(self.paramfile).read())
+                data = UAM_DATA
+            self.BASE_PATH = os.path.join(data, self.vehicle)
+                
+        self.datafile = os.path.join(self.BASE_PATH, self.design_datafile)
+        self.paramfile = os.path.join(self.BASE_PATH, self.design_paramfile)
+        self.datadict = json.loads(open(self.datafile).read())
+        self.paramdict = json.loads(open(self.paramfile).read())
         assert self.datadict
         assert self.paramdict
 
@@ -154,10 +166,16 @@ class DragRunner:
             if not os.path.exists(os.path.join(self.BASE_PATH, "baseline")):
                 os.makedirs(os.path.join(self.BASE_PATH, "baseline"))
             else:
-                print(
-                    f"baseline results for {self.vehicle} ({self.vehicle_type}) already exist, exiting"
-                )
-                return
+                if self.vehicle:
+                    print(
+                        f"baseline results already exist for {self.vehicle} ({self.vehicle_type}) already exist, exiting"
+                    )
+                    return
+                elif self.primitive_struct:
+                    print(
+                        f"baseline results already exist for {self.primitive_struct} already exist, exiting"
+                    )
+                    return
 
             print("running baseline drag model")
             include_wing = True
@@ -273,7 +291,7 @@ class DragRunner:
             os.path.join(
                 self.BASE_PATH,
                 "results",
-                self.vehicle + "_" + time.strftime("%Y%m%d-%H%M%S") + ".csv",
+                str(self.vehicle) + "_" + time.strftime("%Y%m%d-%H%M%S") + ".csv",
             ),
             "w",
         ) as f:
@@ -285,43 +303,51 @@ class DragRunner:
         with open(self.paramfile, "w") as f:
             json.dump(self.paramdict, f, indent=3)
 
+    def get_random_param_value(self, orig_val, scale=20):
+        direction = -1 if bool(round(random.random())) else 1
+        change = direction * random.random() * scale
+        return orig_val + change
+
+
     def update_drag_input_params(self, scale=20):
 
         changed = {}  # { structure: (old_param, new_param) }
 
         if "length" in self.study_params:
             # print("randomizing length params")
+
+            length_keys = {"capsule": "TUBE_LENGTH"}
             for structure, properties in self.paramdict.items():
                 # print(structure)
-                cadpart = (
-                    "fuse_cyl_ported.prt"
-                    if self.vehicle_type == "uam"
-                    else "para_tube.prt"
-                )
-                if (
-                    "LENGTH" in properties.keys() and properties["CADPART"] == cadpart
-                ):  # only change length for now
-                    orig_len = properties["LENGTH"]
+                # cadpart = (
+                #     "fuse_cyl_ported.prt"
+                #     if self.vehicle_type == "uam" or self.primitive_struct is not None
+                #     else "para_tube.prt"
+                # )
+                if length_keys[self.drag_subject] in properties.keys():
+                    length_key = length_keys[self.drag_subject]
+                    #cad_part = properties["CADPART"]
+                    orig_len = float(properties[length_key])
                     # print(f"modifying length of {structure} from {orig_len}")
-                    direction = -1 if bool(round(random.random())) else 1
-                    change = direction * random.random() * scale
-                    new_len = orig_len + change
+                    new_len = self.get_random_param_value(orig_len)
+
                     # print(f"orig_val is {orig_len} + {change} = {new_len}")
-                    changed[structure] = {"LENGTH": (orig_len, new_len)}
-                    self.paramdict[structure]["LENGTH"] += change
-        if "prop" in self.study_params:
-            # print("randomizing prop params")
-            for structure, properties in self.paramdict.items():
-                if "PROP_TYPE" in properties.keys():  # only change diameter for now
-                    # print(f"modifying diameter of {structure} from {properties['DIAMETER']}")
-                    orig_diam = float(properties["DIAMETER"])
-                    direction = -1 if bool(round(random.random())) else 1
-                    change = direction * random.random() * scale
-                    new_diam = orig_diam + change
-                    # print(f"orig_val is {orig_diam} + {change} = {new_diam}")
-                    changed[structure] = {"DIAMETER": (orig_diam, new_diam)}
-                    self.paramdict[structure]["DIAMETER"] = str(new_diam)
-        if "wing" in self.study_params:
+                    changed[structure] = {length_key: (orig_len, new_len)}
+                    self.paramdict[structure][length_key] = new_len
+                    break  # change only the first length, we assume the first length is the most important
+        # elif "prop" in self.study_params:
+        #     # print("randomizing prop params")
+        #     for structure, properties in self.paramdict.items():
+        #         if "PROP_TYPE" in properties.keys():  # only change diameter for now
+        #             # print(f"modifying diameter of {structure} from {properties['DIAMETER']}")
+        #             orig_diam = float(properties["DIAMETER"])
+        #             direction = -1 if bool(round(random.random())) else 1
+        #             change = direction * random.random() * scale
+        #             new_diam = orig_diam + change
+        #             # print(f"orig_val is {orig_diam} + {change} = {new_diam}")
+        #             changed[structure] = {"DIAMETER": (orig_diam, new_diam)}
+        #             self.paramdict[structure]["DIAMETER"] = str(new_diam)
+        elif "wing" in self.study_params:
             # print("randomizing wing params")
             for structure, properties in self.paramdict.items():
                 # print(f"structure is: {structure}")
@@ -370,14 +396,14 @@ def run():
     # parser.add_argument('--corpus', type=str, metavar='corpus type',
     #                     choices=['uav', 'uam'])
     parser.add_argument(
-        "--vehicle",
+        "-vehicle",
         type=str,
         metavar="design name",
         help="the name of the vehicle of interest",
     )
-    parser.add_argument(
-        "--fit", action="store_true", help="fit the specified vehicle to"
-    )
+    # parser.add_argument(
+    #     "--fit", action="store_true", help="fit the specified vehicle to"
+    # )
     parser.add_argument(
         "--baseline",
         action="store_true",
@@ -388,16 +414,16 @@ def run():
         action="store_true",
         help="randomly change connector lengths in the design by a small amount",
     )
-    parser.add_argument(
-        "--wing",
-        action="store_true",
-        help="randomly change connector lengths in the design by a small amount",
-    )
-    parser.add_argument(
-        "--prop",
-        action="store_true",
-        help="randomly change connector lengths in the design by a small amount",
-    )
+    # parser.add_argument(
+    #     "--wing",
+    #     action="store_true",
+    #     help="randomly change connector lengths in the design by a small amount",
+    # )
+    # parser.add_argument(
+    #     "--prop",
+    #     action="store_true",
+    #     help="randomly change connector lengths in the design by a small amount",
+    # )
     parser.add_argument(
         "--runs", type=int, default=1, help="the number of drag runs to complete"
     )
@@ -405,27 +431,36 @@ def run():
     parser.add_argument(
         "--from-zip", action="store_true", help="run a drag study on a design"
     )
-    args = parser.parse_args()
-    print(args)
 
-    if args.fit and args.vehicle:
-        fit.run(args.vehicle)
-        sys.exit(0)
-    elif args.fit and not args.vehicle:
-        print("need to specify a vehicle to fit its data")
-        sys.exit(0)
+    subparsers = parser.add_subparsers()
+    parser_prim = subparsers.add_parser("prim")  # specify individual structures
+    parser_prim.add_argument("struct", type=str) #choices=['rail', 'crossbar', 'tbar', 'fuselage'])
+
+    #parser_fit = subparsers.add_parser("fit")  # specify a fit method for drag data
+
+    args = parser.parse_args()
+
+    print(f"args are: {args}")
+
+    # if args.fit and args.vehicle:
+    #     fit.run(args.vehicle)
+    #     sys.exit(0)
+    # elif args.fit and not args.vehicle:
+    #     print("need to specify a vehicle to fit its data")
+    #     sys.exit(0)
 
     study_params = []
     if args.length:
         study_params.append("length")
-    if args.prop:
-        study_params.append("prop")
-    if args.wing:
-        study_params.append("wing")
+    # if args.prop:
+    #     study_params.append("prop")
+    # if args.wing:
+    #     study_params.append("wing")
     print(f"study params are: {study_params}")
-    dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip)
-    dr.set_params_and_run_drag()
-    # dr.run_dragmodel()
+
+    dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip, args.struct)
+    #dr.set_params_and_run_drag()
+    dr.run_dragmodel()
 
 
 if __name__ == "__main__":

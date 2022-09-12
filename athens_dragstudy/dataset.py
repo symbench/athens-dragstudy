@@ -13,20 +13,28 @@
 
 import glob
 import os
-from . import VEHICLES
+from tkinter import ALL
+from athens_dragstudy import ALL_VEHICLES, ALL_PRIMITIVES
 
 
 class DragDataset:
     """Aggregate csv files of drag results based on the passed"""
 
-    def __init__(vehicle: str, study_params: list = ['length']):
+    def __init__(self, drag_subject: str, study_params: list = ['length']):
+        print(F"create drag dataset")
+        self.drag_subject = drag_subject
+        print(ALL_PRIMITIVES) 
+
+    def load_csv(self):
+        print(f"load drag csv file")
         pass
 
     def get_min_drag_params():
         pass
 
     def get_max_drag_params():
+        pass
 
 
 if __name__ == "__main__":
-    dd = DragDataset()
+    dd = DragDataset("crossbar")
