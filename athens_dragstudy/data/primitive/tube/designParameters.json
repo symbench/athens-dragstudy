@@ -1,0 +1,12 @@
+{
+  "mid_tube_r": {
+    "OFFSET2": "0",
+    "END_ROT": "0",
+    "LENGTH": 140.0,
+    "OFFSET1": "0",
+    "BASE_ROT": "0",
+    "OD": "10.0076",
+    "ID": "7.3152",
+    "CADPART": "para_tube.prt"
+  }
+}

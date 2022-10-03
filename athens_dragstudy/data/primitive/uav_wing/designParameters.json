@@ -1,0 +1,38 @@
+{
+  "front_right_wing": {
+    "SERVO_WIDTH": "10",
+    "CHORD_2": 150.0,
+    "TAPER_OFFSET": "0",
+    "CHORD_1": 150.0,
+    "TUBE_ROTATION": 180.0,
+    "SERVO_LENGTH": "10",
+    "SERVO_THICKNESS": "10",
+    "TUBE_DIAMETER": "10",
+    "SPAN": 450.0,
+    "TUBE_OFFSET": 160.32,
+    "THICKNESS": 12.0,
+    "LOAD": "15",
+    "AILERON_BIAS": "0.5",
+    "NACA_PROFILE": 12.0,
+    "FLAP_BIAS": "0.5",
+    "CADPART": "uav_wing.prt"
+  },
+  "rear_left_wing": {
+    "SERVO_WIDTH": "10",
+    "CHORD_2": 180.0,
+    "TAPER_OFFSET": "0",
+    "CHORD_1": 180.0,
+    "TUBE_ROTATION": 270.0,
+    "SERVO_LENGTH": "10",
+    "SERVO_THICKNESS": "10",
+    "TUBE_DIAMETER": "10",
+    "SPAN": 609.0,
+    "TUBE_OFFSET": 448.68,
+    "THICKNESS": 12.0,
+    "LOAD": "15",
+    "AILERON_BIAS": "0.5",
+    "NACA_PROFILE": 12.0,
+    "FLAP_BIAS": "0.5",
+    "CADPART": "uav_wing.prt"
+  }
+}
