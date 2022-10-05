@@ -35,3 +35,10 @@ Drag is computed for a component in the following steps (some things may not be 
 
 - `trimesh.base.Trimesh`
 - `shapely.geometry.polygon.Polygon`
+
+### Swri Biweekly 10/03/22
+[updated drag model](https://git.isis.vanderbilt.edu/SwRI/uam_direct2cad/-/commit/7a79dcf498d4cee2657e7e2842a69bfb92d659c3#) 
+- updated approximations equations for cylinder and plate drag
+- `vp` and `ap` changed along with velocity range (line 426) and angle range (line 431)
+- added propeller and cargo drag, `structo` flag for structural output on forward flight
+- J-Scale and T-scale results
