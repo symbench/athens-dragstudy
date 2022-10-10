@@ -51,10 +51,10 @@ def run():
     # parser.add_argument('--corpus', type=str, metavar='corpus type',
     #                     choices=['uav', 'uam'])
     parser.add_argument(
-        "-vehicle",
+        "-subject",
         type=str,
-        metavar="design name",
-        help="the name of the vehicle of interest",
+        metavar="vehicle or component name",
+        help="the name of the drag subject of interest, can be a component or full design",
     )
     # parser.add_argument(
     #     "--fit", action="store_true", help="fit the specified vehicle to"
@@ -87,13 +87,14 @@ def run():
         "--from-zip", action="store_true", help="run a drag study on a design"
     )
 
-    subparsers = parser.add_subparsers()
-    parser_prim = subparsers.add_parser("prim")  # specify individual structures
-    parser_prim.add_argument("struct", type=str) #choices=['rail', 'crossbar', 'tbar', 'fuselage'])
+    # subparsers = parser.add_subparsers()
+    # parser_prim = subparsers.add_parser("prim")  # specify individual structures
+    # parser_prim.add_argument("-struct", type=str) #choices=['rail', 'crossbar', 'tbar', 'fuselage'])
 
     #parser_fit = subparsers.add_parser("fit")  # specify a fit method for drag data
 
     args = parser.parse_args()
+    #prim_args = parser_prim.parse_args()
 
     print(f"args are: {args}")
 
@@ -104,16 +105,20 @@ def run():
     #     print("need to specify a vehicle to fit its data")
     #     sys.exit(0)
 
-    study_params = []
-    if args.length:
-        study_params.append("length")
-    # if args.prop:
-    #     study_params.append("prop")
-    if args.wing:
-        study_params.append("wing")
+    study_params = ["length"]
+    # if args.length:
+    #     study_params.append("length")
+    # # if args.prop:
+    # #     study_params.append("prop")
+    # if args.wing:
+    #     study_params.append("wing")
     print(f"study params are: {study_params}")
 
-    dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip, args.struct)
+    # if args.struct:
+    #     dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip, args.struct)
+    # else:
+    dr = DragRunner(args.subject, args.runs, study_params, args.baseline, args.from_zip)
+
     #dr.set_params_and_run_drag()
     dr.run_dragmodel()
 

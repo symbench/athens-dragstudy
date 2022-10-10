@@ -36,8 +36,11 @@ class DragDataset:
         print(f"load drag csv file")
         #assert self.drag_subject in ALL_PRIMITIVES + ALL_VEHICLES, f"drag subject {self.drag_subject} not found"
         import pandas as pd
-        data_path = os.path.join()
-        csv_files = 
+        
+        # only look at last file for now, handle column matching later
+        data_files = os.listdir(self.datapath)[-1]
+        
+
         df = pd.read_csv('myfile.csv', sep=',', header=None)
         print(df.values)
 
