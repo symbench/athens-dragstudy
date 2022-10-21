@@ -1295,9 +1295,8 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, s
                 # Here we have spotlight area  drag  + shadowed area drag contributions
                 # spatial[q]["Drag"] = 0.5 * rho * Vel**2 * spatial[q]['Cd'] * np.tile(spatial[q]['rarea'], [np.size(Vel,axis=0),1]) + 0.5 * rho * Vel**2 * spatial[q]['Cd'] * np.tile(spatial[q]['marea'], [np.size(Vel,axis=0),1]) * spatial[q]['mfun']
                 modder = np.min(spatial[q]['mfun'], axis=0)
-                spatial[q]["Drag"] = 0.5 * rho * Vel ** 2 * spatial[q]['Cd'] * np.tile(spatial[q]['rarea'],[np.size(Vel, axis=0),1]) * np.tile(modder,[len(vel), 1])
 
-                #
+                spatial[q]["Drag"] = 0.5 * rho * Vel ** 2 * spatial[q]['Cd'] * np.tile(spatial[q]['rarea'],[np.size(Vel, axis=0),1]) * np.tile(modder,[len(vel), 1])
                 Total_Drag = Total_Drag + spatial[q]["Drag"][vp, ap]
                 # I am including the wing drag to find the center of drag, otherwise it be heavily biased if the wing shields a large part of the body.
                 Drag_MomentX = Drag_MomentX + spatial[q]["Drag"] * np.ones(np.shape(Vel)) * spatial[q]['GCG'][0]

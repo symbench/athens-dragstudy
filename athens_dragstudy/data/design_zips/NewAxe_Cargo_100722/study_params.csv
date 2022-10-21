@@ -1,0 +1,7 @@
+Flight_Path,CargoMass,Requested_Vertical_Speed,Requested_Lateral_Speed,Requested_Vertical_Down_Speed,Requested_Lateral_Acceleration,Requested_Lateral_Deceleration,Requested_Vertical_Acceleration,Requested_Vertical_Deceleration,Landing_Approach_Height,Vertical_Landing_Speed_at_Ground,Q_position,Q_Velocity,Q_Angular_velocity,Q_Angles,Ctrl_R
+1,0.5,-1,19,2,0.125,-0.125,-0.2,0.2,3,0.1,1,1,1,1,0.1
+3,0.5,-1,19,2,0.125,-0.125,-0.2,0.2,3,0.1,1,1,1,1,0.1
+4,0.5,-2,1,2,0.125,-0.125,-0.2,0.2,3,0.1,1,1,1,1,0.1
+5,0.5,-1,19,2,0.125,-0.125,-0.2,0.2,3,0.1,1,1,1,1,0.1
+9,0.5,-2,19,2,0.125,-0.125,-0.2,0.2,3,0.1,1,1,1,1,0.1
+9,0.001,-2,19,2,0.125,-0.125,-0.2,0.2,3,0.1,1,1,1,1,0.1

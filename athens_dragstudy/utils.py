@@ -111,10 +111,9 @@ class DragRunner:
             # get the param and json from the zip file
 
             # when we are able to run UAVs through the pipeline, update this code
+            self.BASE_PATH = os.path.join(DATA_PATH, "design_zips", self.drag_subject + ".zip")
+            z = zipfile.ZipFile(self.BASE_PATH)
 
-            z = zipfile.ZipFile(
-                os.path.join(DATA_PATH, "design_zips", self.vehicle + ".zip")
-            )
             with z.open("archive/result_1/designData.json") as f:
                 self.datadict = json.loads(f.read().decode("utf-8"))
             # print(type(self.datadict))
@@ -129,9 +128,9 @@ class DragRunner:
 
             print(f"detected vehicle type: {self.subject_type}")
             if self.subject_type == "uam":
-                self.BASE_PATH = os.path.join(UAM_DATA, self.vehicle)
+                self.BASE_PATH = os.path.join(UAM_DATA, self.drag_subject)
             else:
-                self.BASE_PATH = os.path.join(UAV_DATA, self.vehicle)
+                self.BASE_PATH = os.path.join(UAV_DATA, self.drag_subject)
 
         # elif primitive_struct is not None:
         #     # get data from primitive folder and run drag
@@ -139,22 +138,22 @@ class DragRunner:
         #     self.BASE_PATH = os.path.join(PRIMITIVE_DATA, primitive_struct)
         #     print(self.BASE_PATH)
         # elif self.vehicle:
-
-        if self.subject_type == "uav":
-            data = UAV_DATA
-        elif self.subject_type == "uam":
-            data = UAM_DATA
         else:
-            data = PRIMITIVE_DATA
+            if self.subject_type == "uav":
+                data = UAV_DATA
+            elif self.subject_type == "uam":
+                data = UAM_DATA
+            else:
+                data = PRIMITIVE_DATA
 
-        self.BASE_PATH = os.path.join(data, self.drag_subject)
-                
-        self.datafile = os.path.join(self.BASE_PATH, self.design_datafile)
-        self.paramfile = os.path.join(self.BASE_PATH, self.design_paramfile)
-        self.datadict = json.loads(open(self.datafile).read())
-        self.paramdict = json.loads(open(self.paramfile).read())
-        assert self.datadict
-        assert self.paramdict
+            self.BASE_PATH = os.path.join(data, self.drag_subject)
+                    
+            self.datafile = os.path.join(self.BASE_PATH, self.design_datafile)
+            self.paramfile = os.path.join(self.BASE_PATH, self.design_paramfile)
+            self.datadict = json.loads(open(self.datafile).read())
+            self.paramdict = json.loads(open(self.paramfile).read())
+            assert self.datadict
+            assert self.paramdict
 
     def set_params_and_run_drag(self):
         """Run the drag model with a specific set of parameters that come from

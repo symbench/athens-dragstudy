@@ -19,7 +19,14 @@ The benefit of this tool is that, instead of updating parameters and rebuilding 
 
 6. It is also possible to run a drag study on a zip file which is output from Jenkins. To do this, move the zip file of interest to the `design_zips` folder. Then, from the command line, use the `--from-zip` argument along with the `--vehicle vehicle_name` argument where `vehicle_name` is the name of the zip folder of interest, without the ".zip" extension.
 
-See the drag_model notes file for FAQs about the code itself 
+See the drag_model notes file for FAQs about the code itself
+
+## Usage Examples
+
+Generate data for a single component as the drag subject (called a "primitive"). Results are stored under `data/primitive/<drag_subject>/results/*.csv`
+
+- Capsule (UAV fuselage): `athens-dragstudy -subject capsule --runs 1000`
+- refactoring/ cleanup needed for other commands at this time, WIP
 
 ## TODO
 - [ ] Add curve fitting
