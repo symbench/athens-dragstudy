@@ -75,77 +75,56 @@ class DragRunner:
         run_baseline: bool = False,
         from_zip: bool = False,
         primitive_struct: str = None,
-        use_old_drag_model: bool = False
+        use_old_drag_model: bool = False,
+        use_creo_massprops: bool = True
     ):
 
-        assert subject in uav_options + uam_options + prim_options, "invalid drag subject"
-        self.drag_subject = subject  # if primitive_struct is None else primitive_struct
-        self.subject_type = None
-
+        assert subject in uav_options + uam_options + prim_options, f"invalid drag subject: {subject}"
+        self.drag_subject = subject
+        
+        self.subject_type = None  # determine uav, uam, or standalone component
         if self.drag_subject in uam_options:
             self.subject_type = "uam"
+            data = UAM_DATA
         elif self.drag_subject in uav_options:
             self.subject_type = "uav"
+            data = UAV_DATA
         else:
             self.subject_type = "primitive"
-        
-        #self.vehicle = self.drag_subject
-
+            data = PRIMITIVE_DATA
+        print(f"subject type is {self.subject_type}")
+                
         self.design_datafile = "designData.json"
         self.design_paramfile = "designParameters.json"
 
         # focus on length and wing parameters for now
-        self.study_params = ["length"]  # if study_params is None else study_params
+        if self.subject_type != "primitive" and not study_params:
+            self.study_params = ["length"]  # default
+        else:
+            self.study_params = study_params
 
         self.num_runs = num_runs
         self.run_baseline = run_baseline
-        #self.primitive_struct = primitive_struct
 
-
-        # self.subject_type = None
-
+        # deprecated for previous updates
         self.use_old_drag = use_old_drag_model
 
-
         if from_zip:  # read json data directly from jenkins build artifact
-            # get the param and json from the zip file
 
-            # when we are able to run UAVs through the pipeline, update this code
             self.BASE_PATH = os.path.join(DATA_PATH, "design_zips", self.drag_subject + ".zip")
             z = zipfile.ZipFile(self.BASE_PATH)
 
             with z.open("archive/result_1/designData.json") as f:
                 self.datadict = json.loads(f.read().decode("utf-8"))
-            # print(type(self.datadict))
             with z.open("archive/result_1/designParameters.json") as f:
                 self.paramdict = json.loads(f.read().decode("utf-8"))
-            # print(type(self.paramdict))
 
             self.subject_type = "uam"  # assume uam until proven otherwise
-            for struct_name, prop_dict in self.paramdict.items():
+            for _, prop_dict in self.paramdict.items():
                 if "CADPART" in prop_dict and prop_dict["CADPART"] == "para_tube.prt":
                     self.subject_type = "uav"
-
-            print(f"detected vehicle type: {self.subject_type}")
-            if self.subject_type == "uam":
-                self.BASE_PATH = os.path.join(UAM_DATA, self.drag_subject)
-            else:
-                self.BASE_PATH = os.path.join(UAV_DATA, self.drag_subject)
-
-        # elif primitive_struct is not None:
-        #     # get data from primitive folder and run drag
-        #     print(f"primitive drag study of struct: {primitive_struct}")
-        #     self.BASE_PATH = os.path.join(PRIMITIVE_DATA, primitive_struct)
-        #     print(self.BASE_PATH)
-        # elif self.vehicle:
+        
         else:
-            if self.subject_type == "uav":
-                data = UAV_DATA
-            elif self.subject_type == "uam":
-                data = UAM_DATA
-            else:
-                data = PRIMITIVE_DATA
-
             self.BASE_PATH = os.path.join(data, self.drag_subject)
                     
             self.datafile = os.path.join(self.BASE_PATH, self.design_datafile)
@@ -155,37 +134,40 @@ class DragRunner:
             assert self.datadict
             assert self.paramdict
 
-    def set_params_and_run_drag(self):
-        """Run the drag model with a specific set of parameters that come from
-        the parameter drag dataset object"""
+    def run_drag_primitive(self):
+        pass
 
-        run_params = {"leg": 95, "arm": 220}
+    # def set_params_and_run_drag(self):
+    #     """Run the drag model with a specific set of parameters that come from
+    #     the parameter drag dataset object"""
 
-        for name in self.paramdict.keys():
-            item = name.split("_")[0]
-            if item in ["arm", "leg"]:
-                # print(
-                #     f"changing {name} from {self.paramdict[name]['LENGTH']} to {float(run_params[item])}"
-                # )
-                self.paramdict[name]["LENGTH"] = float(run_params[item])
-                print(name, self.paramdict[name]["LENGTH"])
+    #     run_params = {"leg": 95, "arm": 220}
 
-        include_wing = False
-        create_plot = False
-        debug = False
-        stl_output = False
-        drags, center, stl_mesh, plots = cdm.run_full(
-            self.datadict, self.paramdict, include_wing, create_plot, debug, stl_output
-        )
+    #     for name in self.paramdict.keys():
+    #         item = name.split("_")[0]
+    #         if item in ["arm", "leg"]:
+    #             # print(
+    #             #     f"changing {name} from {self.paramdict[name]['LENGTH']} to {float(run_params[item])}"
+    #             # )
+    #             self.paramdict[name]["LENGTH"] = float(run_params[item])
+    #             print(name, self.paramdict[name]["LENGTH"])
 
-        if not os.path.exists(os.path.join(self.BASE_PATH, "tmp")):
-            os.makedirs(os.path.join(self.BASE_PATH, "tmp"))
+    #     include_wing = False
+    #     create_plot = False
+    #     debug = False
+    #     stl_output = False
+    #     drags, center, stl_mesh, plots = cdm.run_full(
+    #         self.datadict, self.paramdict, include_wing, create_plot, debug, stl_output
+    #     )
 
-        if stl_output:
-            stl_mesh.export(os.path.join(self.BASE_PATH, "tmp", "aircraft.stl"))
+    #     if not os.path.exists(os.path.join(self.BASE_PATH, "tmp")):
+    #         os.makedirs(os.path.join(self.BASE_PATH, "tmp"))
 
-        print(f"drags: {drags}")
-        print(f"centers: {center}")
+    #     if stl_output:
+    #         stl_mesh.export(os.path.join(self.BASE_PATH, "tmp", "aircraft.stl"))
+
+    #     print(f"drags: {drags}")
+    #     print(f"centers: {center}")
 
     def run_baseline_drag(self):
 
@@ -197,16 +179,10 @@ class DragRunner:
         if not os.path.exists(os.path.join(self.BASE_PATH, f"baseline_{result_id}")):
             os.makedirs(os.path.join(self.BASE_PATH, f"baseline_{result_id}"))
         else:
-            if self.vehicle:
-                print(
-                    f"baseline results already exist for {self.vehicle} ({self.subject_type}) already exist, exiting"
-                )
-                return
-            elif self.primitive_struct:
-                print(
-                    f"baseline results already exist for {self.primitive_struct} already exist, exiting"
-                )
-                return
+            print(
+                f"baseline results already exist for {self.drag_subject} ({self.subject_type}) already exist, exiting"
+            )
+            return
 
         print("running baseline drag model")
         include_wing = True
@@ -289,9 +265,17 @@ class DragRunner:
 
         if self.run_baseline:  # run the analysis with the original parameters
             self.run_baseline_drag()
-            self.use_old_drag = not self.use_old_drag
-            self.run_baseline_drag()
+            # self.use_old_drag = not self.use_old_drag
+            # self.run_baseline_drag()
             return
+        elif self.from_zip:
+            print("run drag model from zip file")
+        elif self.subject_type == "primitive":
+            print("run drag model on primitive")
+        elif self.subject_type == "uav":
+            print("run drag model on uav")
+        elif self.subject_type == "uam":
+            print("run drag model on uam")
 
         all_results = []
 

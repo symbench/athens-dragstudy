@@ -24,23 +24,7 @@ import random
 import time
 
 
-
-# # TODO: if you want a new vehicle to study it must go here
-# UAM_VEHICLES = [
-#     "spade",
-#     "tbar_full",
-#     "tbar_double",
-#     "tbar_single",
-#     "tbar_minime",
-#     "tbar_steerwing",
-#     "dummy",
-# ]
-
-# print(UAM_VEHICLES)
-
-# UAV_VEHICLES = ["axe", "quad"]
 # VALID_VEHICLES = UAM_VEHICLES + UAV_VEHICLES
-
 
 
 def run():
@@ -48,17 +32,15 @@ def run():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    # parser.add_argument('--corpus', type=str, metavar='corpus type',
-    #                     choices=['uav', 'uam'])
+
+
     parser.add_argument(
         "-subject",
         type=str,
         metavar="vehicle or component name",
         help="the name of the drag subject of interest, can be a component or full design",
     )
-    # parser.add_argument(
-    #     "--fit", action="store_true", help="fit the specified vehicle to"
-    # )
+
     parser.add_argument(
         "--baseline",
         action="store_true",

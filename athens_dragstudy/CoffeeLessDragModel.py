@@ -432,20 +432,10 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, s
     rho = 1.225  # air density
     ang = np.arange(-20, 1, 20)# np.arange(-20, 21, 50)
     Vel = np.transpose(np.tile(vel, [len(ang), 1]))
-
-    print(f"type DataName {isinstance(DataName, dict)}")
-    print(f"type ParaName {isinstance(ParaName, dict)}")
-    
-    if isinstance(DataName, str) and isinstance(ParaName, str):
-        with open(DataName) as f:
-            spatial = json.load(f)
-        with open(ParaName) as f:
-            parameter = json.load(f)
-    elif isinstance(DataName, dict) and isinstance(ParaName, dict):
-        print("assignment")
-        spatial = DataName
-        parameter = ParaName
-    
+    with open(DataName) as f:
+        spatial = json.load(f)
+    with open(ParaName) as f:
+        parameter = json.load(f)
     # with open(ConnName) as f:
     #     connect = json.load(f)
     # with open(PropName) as f:
@@ -1295,8 +1285,9 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, s
                 # Here we have spotlight area  drag  + shadowed area drag contributions
                 # spatial[q]["Drag"] = 0.5 * rho * Vel**2 * spatial[q]['Cd'] * np.tile(spatial[q]['rarea'], [np.size(Vel,axis=0),1]) + 0.5 * rho * Vel**2 * spatial[q]['Cd'] * np.tile(spatial[q]['marea'], [np.size(Vel,axis=0),1]) * spatial[q]['mfun']
                 modder = np.min(spatial[q]['mfun'], axis=0)
-
                 spatial[q]["Drag"] = 0.5 * rho * Vel ** 2 * spatial[q]['Cd'] * np.tile(spatial[q]['rarea'],[np.size(Vel, axis=0),1]) * np.tile(modder,[len(vel), 1])
+
+                #
                 Total_Drag = Total_Drag + spatial[q]["Drag"][vp, ap]
                 # I am including the wing drag to find the center of drag, otherwise it be heavily biased if the wing shields a large part of the body.
                 Drag_MomentX = Drag_MomentX + spatial[q]["Drag"] * np.ones(np.shape(Vel)) * spatial[q]['GCG'][0]

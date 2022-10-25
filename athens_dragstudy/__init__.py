@@ -6,6 +6,7 @@ DATA_PATH = os.path.abspath(
 UAM_DATA = os.path.join(DATA_PATH, "uam")
 UAV_DATA = os.path.join(DATA_PATH, "uav")
 PRIMITIVE_DATA = os.path.join(DATA_PATH, "primitive")
+MASSPROPS_DATA = os.path.join(DATA_PATH, "massprops")
 
 UAM_VEHICLES = os.listdir(UAM_DATA)
 UAV_VEHICLES = os.listdir(UAV_DATA)
