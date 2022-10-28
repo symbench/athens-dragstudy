@@ -19,7 +19,7 @@ fdm:
   Q_Velocity: 1
   Requested_Lateral_Speed: 1
   Requested_Vertical_Speed: 19
-num_samples: 100
+num_samples: 10
 random_seed: 42
 params:
   capsule_fuselage_BOTTOM_CONNECTOR_OFFSET_LENGTH:
