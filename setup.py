@@ -26,8 +26,6 @@ setup(
         "numpy",
         "creopyson",
         "trimesh",
-        "pyyaml",
-        "pydantic"
     ],
     entry_points={
         'console_scripts': [
