@@ -1,0 +1,167 @@
+[
+  {
+    "FROM_COMP": "cargo_case",
+    "LIB_COMPONENT": "CargoCase",
+    "CAD_PRT": "para_cargo_case.prt"
+  },
+  {
+    "FROM_COMP": "leg_1",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "mp_1_motor",
+    "LIB_COMPONENT": "t_motor_AT2312KV1400",
+    "CAD_PRT": "para_motor.prt"
+  },
+  {
+    "FROM_COMP": "Battery_1",
+    "LIB_COMPONENT": "TurnigyGraphene1000mAh2S75C",
+    "CAD_PRT": "para_battery.prt"
+  },
+  {
+    "FROM_COMP": "main_hub",
+    "LIB_COMPONENT": "0394od_para_hub_4",
+    "CAD_PRT": "0394od_para_hub_4_3d.prt"
+  },
+  {
+    "FROM_COMP": "flange_2",
+    "LIB_COMPONENT": "0394_para_flange",
+    "CAD_PRT": "para_flange.prt"
+  },
+  {
+    "FROM_COMP": "Current",
+    "LIB_COMPONENT": "Current",
+    "CAD_PRT": "para_sensor.prt"
+  },
+  {
+    "FROM_COMP": "arm_3",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "flange_1",
+    "LIB_COMPONENT": "0394_para_flange",
+    "CAD_PRT": "para_flange.prt"
+  },
+  {
+    "FROM_COMP": "mp_3_motor",
+    "LIB_COMPONENT": "t_motor_AT2312KV1400",
+    "CAD_PRT": "para_motor.prt"
+  },
+  {
+    "FROM_COMP": "mp_4_prop",
+    "LIB_COMPONENT": "apc_propellers_6x4E",
+    "CAD_PRT": "para_prop.prt"
+  },
+  {
+    "FROM_COMP": "mp_2_prop",
+    "LIB_COMPONENT": "apc_propellers_6x4E",
+    "CAD_PRT": "para_prop.prt"
+  },
+  {
+    "FROM_COMP": "Battery_2",
+    "LIB_COMPONENT": "TurnigyGraphene1000mAh2S75C",
+    "CAD_PRT": "para_battery.prt"
+  },
+  {
+    "FROM_COMP": "Autopilot",
+    "LIB_COMPONENT": "Autopilot",
+    "CAD_PRT": "para_sensor.prt"
+  },
+  {
+    "FROM_COMP": "Variometer",
+    "LIB_COMPONENT": "Variometer",
+    "CAD_PRT": "para_sensor.prt"
+  },
+  {
+    "FROM_COMP": "arm_1",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "RpmTemp",
+    "LIB_COMPONENT": "RpmTemp",
+    "CAD_PRT": "para_sensor.prt"
+  },
+  {
+    "FROM_COMP": "mp_4_motor",
+    "LIB_COMPONENT": "t_motor_AT2312KV1400",
+    "CAD_PRT": "para_motor.prt"
+  },
+  {
+    "FROM_COMP": "GPS",
+    "LIB_COMPONENT": "GPS",
+    "CAD_PRT": "para_sensor.prt"
+  },
+  {
+    "FROM_COMP": "mp_1_prop",
+    "LIB_COMPONENT": "apc_propellers_6x4E",
+    "CAD_PRT": "para_prop.prt"
+  },
+  {
+    "FROM_COMP": "mp_2_motor",
+    "LIB_COMPONENT": "t_motor_AT2312KV1400",
+    "CAD_PRT": "para_motor.prt"
+  },
+  {
+    "FROM_COMP": "mp_3_prop",
+    "LIB_COMPONENT": "apc_propellers_6x4E",
+    "CAD_PRT": "para_prop.prt"
+  },
+  {
+    "FROM_COMP": "arm_4",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "leg_4",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "Orient",
+    "LIB_COMPONENT": "Orient",
+    "CAD_PRT": "orientuav.prt"
+  },
+  {
+    "FROM_COMP": "capsule_fuselage",
+    "LIB_COMPONENT": "capsule_fuselage",
+    "CAD_PRT": "fuse_capsule_new.prt"
+  },
+  {
+    "FROM_COMP": "cargo",
+    "LIB_COMPONENT": "Cargo",
+    "CAD_PRT": "para_cargo.prt"
+  },
+  {
+    "FROM_COMP": "Voltage",
+    "LIB_COMPONENT": "Voltage",
+    "CAD_PRT": "para_sensor.prt"
+  },
+  {
+    "FROM_COMP": "arm_2",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "leg_2",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "flange_3",
+    "LIB_COMPONENT": "0394_para_flange",
+    "CAD_PRT": "para_flange.prt"
+  },
+  {
+    "FROM_COMP": "leg_3",
+    "LIB_COMPONENT": "0394OD_para_tube",
+    "CAD_PRT": "para_tube.prt"
+  },
+  {
+    "FROM_COMP": "flange_4",
+    "LIB_COMPONENT": "0394_para_flange",
+    "CAD_PRT": "para_flange.prt"
+  }
+]

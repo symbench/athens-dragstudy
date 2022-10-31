@@ -1,7 +1,7 @@
 import zipfile
 import os
 from athens_dragstudy import DATA_PATH, UAM_DATA, UAV_DATA, UAV_VEHICLES, UAM_VEHICLES, PRIMITIVE_DATA
-from athens_dragstudy import CoffeeLessDragModel_old as cdmo
+from athens_dragstudy import CoffeeLessDragModel_old_debug as cdmo
 from athens_dragstudy import CoffeeLessDragModel as cdm
 import json
 import time

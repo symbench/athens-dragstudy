@@ -10,6 +10,7 @@ import numpy as np
 import trimesh
 # from trimesh.viewer.windowed import SceneViewer
 import matplotlib.pyplot as plt
+from creopyson.file import save
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
@@ -422,7 +423,8 @@ def ellipticaldrag(ell_chord, ell_len, ell_dia, ell_n, ang, vel, mu, rho):
 
 #############################################################################################################################################################################################################################
 
-def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, struct):
+def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, struct, save_dir=None):
+    plt.clf()
     vp = 1#5  # 30 m/s
     ap = 1#4  # +0 deg
     mp = 100  # 50#scale of arrows? 50 for UAM, 100 for UAV works well
@@ -432,10 +434,16 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, s
     rho = 1.225  # air density
     ang = np.arange(-20, 1, 20)# np.arange(-20, 21, 50)
     Vel = np.transpose(np.tile(vel, [len(ang), 1]))
-    with open(DataName) as f:
-        spatial = json.load(f)
-    with open(ParaName) as f:
-        parameter = json.load(f)
+    if not isinstance(DataName, dict):
+        with open(DataName) as f:
+            spatial = json.load(f)
+    else:
+        spatial = DataName
+    if not isinstance(ParaName, dict):
+        with open(ParaName) as f:
+            parameter = json.load(f)
+    else:
+        parameter = ParaName
     # with open(ConnName) as f:
     #     connect = json.load(f)
     # with open(PropName) as f:
@@ -1201,7 +1209,7 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, s
 
         if o == 1 and stl_output == True:
             Con_Mesh = trimesh.util.concatenate(Mesh_list, b=None)  # concat the mesh list
-            Con_Mesh.export('aircraft.stl')
+            Con_Mesh.export('aircraft.stl') if save_dir is None else Con_Mesh.export(f'{save_dir}/aircraft.stl')
             
             
         ####Do interference
@@ -1298,7 +1306,7 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, s
                                                                                        [np.size(Vel, axis=0),
                                                                                         1]) * np.tile(modder,
                                                                                                       [len(vel), 1])
-                #0.5 * rho * Vel ** 2 * spatial[q]['Cl'] * np.tile(spatial[q]['rarea'],[np.size(Vel, axis=0),1]) + 0.5 * rho * Vel ** 2 * \spatial[q]['Cl'] * np.tile(spatial[q]['marea'], [np.size(Vel, axis=0), 1]) * \spatial[q]['mfun']
+                #0.5 * rho * Vel ** 2 * spatial[q]['Cl'] * np.tile(spatial[q]['rarea'],[np.size(Vel, axis=0),1]) + 0.5 * rho * Vel ** 2 * \\spatial[q]['Cl'] * np.tile(spatial[q]['marea'], [np.size(Vel, axis=0), 1]) * \\spatial[q]['mfun']
                 Total_Lift = Total_Lift + -spatial[q]["Lift"][vp, ap]
                 if create_plot == True:
                     ax.arrow3D(spatial[q]["GCG"][0], spatial[q]["GCG"][1], spatial[q]["GCG"][2],
@@ -1394,8 +1402,9 @@ def run_full(DataName, ParaName, include_wing, create_plot, debug, stl_output, s
                 Total_Lift) + ' N' + ' [NonWingDrag = ' + "{:.2f}".format(Total_Drag - Wing_Drag) + ' N]')
 
             ax.set_box_aspect((1, 1, 1))
-            plt.show()
-    
+            if save_dir:
+                plt.gcf().set_size_inches(10, 10)
+                plt.savefig(f"{save_dir}/{o}.png")
 
             
     
@@ -1426,11 +1435,11 @@ if __name__ == "__main__":
         drags, center, structure, prop, J_scale, T_scale = run_full(DataName='designData.json', ParaName='designParameters.json', include_wing=True, create_plot=False,
                  debug=False, stl_output=False, struct=True)
     else:
-        
-        drags, center, prop, J_scale, T_scale = run_full(DataName='designData.json', ParaName='designParameters.json', include_wing=True, create_plot=False,
-                 debug=False, stl_output=True, struct=False)
+        from argparse import ArgumentParser
+        drags, center, spatial, parameter, structure, prop, J_scale, T_scale = run_full(DataName="..\\", ParaName='C:\\Users\\umesh\\swri\\athens-dragstudy\\experiments\\QuadCopterFuseLageWithSensors_100_on_2022-10-28-13-36-15\\1\\designParameters.json', include_wing=True, create_plot=True,
+                 debug=True, stl_output=True, struct=True, save_dir = '.')
 
-
+        print(drags, center, J_scale, T_scale)
 
 
 
