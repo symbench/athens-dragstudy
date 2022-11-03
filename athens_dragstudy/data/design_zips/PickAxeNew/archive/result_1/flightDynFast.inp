@@ -1,0 +1,277 @@
+&aircraft_data
+   aircraft%cname='UAV'
+   aircraft%ctype='SymCPSDesign'
+   aircraft%i_analysis_type =3
+   aircraft%num_wings		= 6
+   aircraft%num_propellers      = 4
+   aircraft%mass          = 5.045441416546558
+   aircraft%x_cm          =  -5.1071711045268104
+   aircraft%y_cm          =  -0.06936885792719895
+   aircraft%z_cm          =  -19.59917977850694
+   aircraft%x_fuse        =  -45.538592776895776
+   aircraft%y_fuse        =  7.211336514905095e-14
+   aircraft%z_fuse        =  29.999982778935703
+   aircraft%X_fuseuu      =  57032.142827602984
+   aircraft%Y_fusevv      =  113957.54551588034
+   aircraft%Z_fuseww      =  91961.14658964853
+   aircraft%Ixx           =  103458.05613507285
+   aircraft%Ixy           =  8.787419189881486
+   aircraft%Ixz           =  -25432.285574883892
+   aircraft%Iyy           =  105750.45708337336
+   aircraft%Iyz           =  0.0
+   aircraft%Izz           =  147350.57207102532
+   aircraft%time           = 0.d0        ! initial time (default = 0.)
+   aircraft%dt             = 1.d-03      ! s  fixed time step
+   aircraft%dt_output      = 1.0d0       ! s  time between output lines
+   aircraft%time_end       = 1000.d0        ! s  end time 
+   aircraft%Unwind         = 0.d0        ! North wind speed in world frame
+   aircraft%Vewind         = 0.d0        ! East wind speed in  world frame
+   aircraft%Wdwind         = 0.d0        ! Down wind speed in world frame
+   aircraft%debug          = 0           ! verbose printouts from fderiv
+   aircraft%num_batteries      = 1
+
+! Propeller front_l_prop  Motor:front_l_motor comps: {'PROP': 'front_l_prop', 'ESC': 'BatteryController', 'BATT': ['Battery_1', 'Battery_2', 'Battery_1', 'Battery_2']}
+   propeller(1)%cname        = 'front_l_prop'
+   propeller(1)%prop_fname   = '..//..//..//Tables/PropData/PER3_12x38SF.dat'
+   propeller(1)%x = 298.2817
+   propeller(1)%y = -160.3200
+   propeller(1)%z = 120.4800
+   propeller(1)%nx = 1.0000
+   propeller(1)%ny = -0.0000
+   propeller(1)%nz = -0.0000
+   propeller(1)%radius =   152.4000
+   propeller(1)%spin =   -1
+   propeller(1)%Ir =   138.35930521632
+   propeller(1)%motor_fname  =   '../../Motors/t_motor_AntigravityMN4006KV380'
+   propeller(1)%Rw  =   0.194
+   propeller(1)%KV  =   380.0
+   propeller(1)%KT  =   0.025129727856615054
+   propeller(1)%I_max  =   16.0
+   propeller(1)%I_idle  =   0.3
+   propeller(1)%maxpower  =   380.0
+   propeller(1)%icontrol  =   1
+   propeller(1)%ibattery  =   1
+
+! Propeller front_r_prop  Motor:front_r_motor comps: {'PROP': 'front_r_prop', 'ESC': 'BatteryController', 'BATT': ['Battery_1', 'Battery_2', 'Battery_1', 'Battery_2']}
+   propeller(2)%cname        = 'front_r_prop'
+   propeller(2)%prop_fname   = '..//..//..//Tables/PropData/PER3_12x38SF.dat'
+   propeller(2)%x = 298.2817
+   propeller(2)%y = 160.3200
+   propeller(2)%z = 120.4800
+   propeller(2)%nx = 1.0000
+   propeller(2)%ny = -0.0000
+   propeller(2)%nz = -0.0000
+   propeller(2)%radius =   152.4000
+   propeller(2)%spin =   1
+   propeller(2)%Ir =   138.35930521632
+   propeller(2)%motor_fname  =   '../../Motors/t_motor_AntigravityMN4006KV380'
+   propeller(2)%Rw  =   0.194
+   propeller(2)%KV  =   380.0
+   propeller(2)%KT  =   0.025129727856615054
+   propeller(2)%I_max  =   16.0
+   propeller(2)%I_idle  =   0.3
+   propeller(2)%maxpower  =   380.0
+   propeller(2)%icontrol  =   2
+   propeller(2)%ibattery  =   1
+
+! Propeller rear_l_prop  Motor:rear_l_motor comps: {'ESC': 'BatteryController', 'PROP': 'rear_l_prop', 'BATT': ['Battery_1', 'Battery_2', 'Battery_1', 'Battery_2']}
+   propeller(3)%cname        = 'rear_l_prop'
+   propeller(3)%prop_fname   = '..//..//..//Tables/PropData/PER3_12x38SF.dat'
+   propeller(3)%x = -202.5983
+   propeller(3)%y = -160.3200
+   propeller(3)%z = -139.8400
+   propeller(3)%nx = 1.0000
+   propeller(3)%ny = -0.0000
+   propeller(3)%nz = -0.0000
+   propeller(3)%radius =   152.4000
+   propeller(3)%spin =   -1
+   propeller(3)%Ir =   138.35930521632
+   propeller(3)%motor_fname  =   '../../Motors/t_motor_AntigravityMN4006KV380'
+   propeller(3)%Rw  =   0.194
+   propeller(3)%KV  =   380.0
+   propeller(3)%KT  =   0.025129727856615054
+   propeller(3)%I_max  =   16.0
+   propeller(3)%I_idle  =   0.3
+   propeller(3)%maxpower  =   380.0
+   propeller(3)%icontrol  =   3
+   propeller(3)%ibattery  =   1
+
+! Propeller rear_r_prop  Motor:rear_r_motor comps: {'ESC': 'BatteryController', 'PROP': 'rear_r_prop', 'BATT': ['Battery_1', 'Battery_2', 'Battery_1', 'Battery_2']}
+   propeller(4)%cname        = 'rear_r_prop'
+   propeller(4)%prop_fname   = '..//..//..//Tables/PropData/PER3_12x38SF.dat'
+   propeller(4)%x = -202.5983
+   propeller(4)%y = 160.3200
+   propeller(4)%z = -139.8400
+   propeller(4)%nx = 1.0000
+   propeller(4)%ny = -0.0000
+   propeller(4)%nz = -0.0000
+   propeller(4)%radius =   152.4000
+   propeller(4)%spin =   1
+   propeller(4)%Ir =   138.35930521632
+   propeller(4)%motor_fname  =   '../../Motors/t_motor_AntigravityMN4006KV380'
+   propeller(4)%Rw  =   0.194
+   propeller(4)%KV  =   380.0
+   propeller(4)%KT  =   0.025129727856615054
+   propeller(4)%I_max  =   16.0
+   propeller(4)%I_idle  =   0.3
+   propeller(4)%maxpower  =   380.0
+   propeller(4)%icontrol  =   4
+   propeller(4)%ibattery  =   1
+
+!   Wing (1) is component named: front_left_wing
+   wing(1)%surface_area   = 67500.0 
+   wing(1)%a   = 0.101 
+   wing(1)%C_L0   = -0.0 
+   wing(1)%C_Lmax   = 1.53 
+   wing(1)%C_Lmin   = -1.53 
+   wing(1)%C_D0   = 0.0083 
+   wing(1)%k   = 0.10915907030196127 
+   wing(1)%C_Dfp   = 1 
+   wing(1)%max_load  = 30.0 
+   wing(1)%bias1   =  1.0
+   wing(1)%bias2   =  0.5
+   wing(1)%icontrol1 = 5  
+   wing(1)%icontrol2 = 0 
+   wing(1)%x   = 260.56000000000006
+   wing(1)%y   = -225.0
+   wing(1)%z   = 153.40930605185173
+   wing(1)%nx   = -0.0
+   wing(1)%ny   = 0.0
+   wing(1)%nz   = 1.0
+!   wing(1)%prop_slip(1) = 0.6541533790697853
+
+!   Wing (2) is component named: front_right_wing
+   wing(2)%surface_area   = 67500.0 
+   wing(2)%a   = 0.101 
+   wing(2)%C_L0   = -0.0 
+   wing(2)%C_Lmax   = 1.53 
+   wing(2)%C_Lmin   = -1.53 
+   wing(2)%C_D0   = 0.0083 
+   wing(2)%k   = 0.10915907030196127 
+   wing(2)%C_Dfp   = 1 
+   wing(2)%max_load  = 30.0 
+   wing(2)%bias1   =  1.0
+   wing(2)%bias2   =  0.5
+   wing(2)%icontrol1 = 6  
+   wing(2)%icontrol2 = 0 
+   wing(2)%x   = 260.56000000000006
+   wing(2)%y   = 225.0
+   wing(2)%z   = 153.40930605185173
+   wing(2)%nx   = -0.0
+   wing(2)%ny   = 0.0
+   wing(2)%nz   = 1.0
+!   wing(2)%prop_slip(2) = 0.6541533790697873
+
+!   Wing (3) is component named: left_rudder
+   wing(3)%surface_area   = 14000.0 
+   wing(3)%a   = 0.101 
+   wing(3)%C_L0   = -0.0 
+   wing(3)%C_Lmax   = 1.53 
+   wing(3)%C_Lmin   = -1.53 
+   wing(3)%C_D0   = 0.0083 
+   wing(3)%k   = 0.2304199793243577 
+   wing(3)%C_Dfp   = 1 
+   wing(3)%max_load  = 20.0 
+   wing(3)%bias1   =  1.0
+   wing(3)%bias2   =  0.5
+   wing(3)%icontrol1 = 10  
+   wing(3)%icontrol2 = 0 
+   wing(3)%x   = -240.32000000000002
+   wing(3)%y   = -195.37953357488914
+   wing(3)%z   = -9.840000000000018
+   wing(3)%nx   = -0.0
+   wing(3)%ny   = -1.0
+   wing(3)%nz   = 0.0
+!   wing(3)%prop_slip(1) = 0.6180508242622191
+!   wing(3)%prop_slip(3) = 0.620336538547869
+
+!   Wing (4) is component named: rear_left_wing
+   wing(4)%surface_area   = 109620.0 
+   wing(4)%a   = 0.101 
+   wing(4)%C_L0   = -0.0 
+   wing(4)%C_Lmax   = 1.53 
+   wing(4)%C_Lmin   = -1.53 
+   wing(4)%C_D0   = 0.0083 
+   wing(4)%k   = 0.09713751466612026 
+   wing(4)%C_Dfp   = 1 
+   wing(4)%max_load  = 30.0 
+   wing(4)%bias1   =  1.0
+   wing(4)%bias2   =  0.5
+   wing(4)%icontrol1 = 8  
+   wing(4)%icontrol2 = 0 
+   wing(4)%x   = -240.32000000000008
+   wing(4)%y   = -304.5
+   wing(4)%z   = -100.69283880183559
+   wing(4)%nx   = -0.0
+   wing(4)%ny   = 0.0
+   wing(4)%nz   = 1.0
+!   wing(4)%prop_slip(3) = 0.47991310090267775
+
+!   Wing (5) is component named: rear_right_wing
+   wing(5)%surface_area   = 109620.0 
+   wing(5)%a   = 0.101 
+   wing(5)%C_L0   = -0.0 
+   wing(5)%C_Lmax   = 1.53 
+   wing(5)%C_Lmin   = -1.53 
+   wing(5)%C_D0   = 0.0083 
+   wing(5)%k   = 0.09713751466612026 
+   wing(5)%C_Dfp   = 1 
+   wing(5)%max_load  = 30.0 
+   wing(5)%bias1   =  1.0
+   wing(5)%bias2   =  0.5
+   wing(5)%icontrol1 = 7  
+   wing(5)%icontrol2 = 0 
+   wing(5)%x   = -240.32000000000002
+   wing(5)%y   = 304.5
+   wing(5)%z   = -100.69283880183563
+   wing(5)%nx   = -0.0
+   wing(5)%ny   = 0.0
+   wing(5)%nz   = 1.0
+!   wing(5)%prop_slip(4) = 0.47991310090267786
+
+!   Wing (6) is component named: right_rudder
+   wing(6)%surface_area   = 14000.0 
+   wing(6)%a   = 0.101 
+   wing(6)%C_L0   = -0.0 
+   wing(6)%C_Lmax   = 1.53 
+   wing(6)%C_Lmin   = -1.53 
+   wing(6)%C_D0   = 0.0083 
+   wing(6)%k   = 0.2304199793243577 
+   wing(6)%C_Dfp   = 1 
+   wing(6)%max_load  = 20.0 
+   wing(6)%bias1   =  1.0
+   wing(6)%bias2   =  0.5
+   wing(6)%icontrol1 = 9  
+   wing(6)%icontrol2 = 0 
+   wing(6)%x   = -240.32000000000002
+   wing(6)%y   = 195.37953357488914
+   wing(6)%z   = -9.840000000000018
+   wing(6)%nx   = -0.0
+   wing(6)%ny   = 1.0
+   wing(6)%nz   = 0.0
+!   wing(6)%prop_slip(4) = 0.6203365385478686
+!   wing(6)%prop_slip(2) = 0.6180508242620922
+!   Batteries: {'BatteryController': ['Battery_1', 'Battery_2']}
+
+!   Battery(1) is an aggregate of the above 
+   battery(1)%voltage   = 22.2 
+   battery(1)%capacity   = 12000.0 
+   battery(1)%C_Continuous   = 75.0 
+   battery(1)%C_Peak         = 150.0 
+!   Controls
+    control%i_flight_path = 9
+    control%requested_lateral_speed = 12
+    control%requested_vertical_speed = -1
+   control%requested_vertical_down_speed = 1
+   control%requested_lateral_acceleration = 2
+   control%requested_lateral_deceleration = -5
+   control%requested_vertical_acceleration = -5
+   control%requested_vertical_deceleration = 5
+   control%landing_approach_height  = 3
+   control%vertical_landing_speed_at_ground  = 0.1
+    control%Q_position = 1.0
+    control%Q_velocity =  0
+    control%Q_angular_velocity =  0.25
+    control%Q_angles =  0
+    control%R=  0.75
+/ 

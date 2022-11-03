@@ -11,28 +11,23 @@
 # GNU General Public License for more details.
 
 import argparse
-import sys
-
-import matplotlib.pyplot as plt
-from typing import Optional
-from athens_dragstudy.utils import DragRunner
-from athens_dragstudy import design_sweep
-
-import time
 import csv
 import os
 import random
+import sys
 import time
+from typing import Optional
 
+import matplotlib.pyplot as plt
+
+from athens_dragstudy import design_sweep, plots
+from athens_dragstudy.utils import DragRunner
 
 # VALID_VEHICLES = UAM_VEHICLES + UAV_VEHICLES
 
 
 def run():
-    commands = [
-        "sweep",
-        "run-drag"
-    ]
+    commands = ["sweep", "coffeeless-drag-model", "drag-runner", "plots"]
 
     pos = len(sys.argv)
     for cmd in commands:
@@ -44,59 +39,66 @@ def run():
     )
 
     parser.add_argument(
-        'command', help="subcommand to execute",
-        choices=sorted(commands)
-    )
-
-    parser.add_argument(
-        "-subject",
-        type=str,
-        metavar="vehicle or component name",
-        help="the name of the drag subject of interest, can be a component or full design",
-    )
-
-    parser.add_argument(
-        "--baseline",
-        action="store_true",
-        help="run the drag model for the original vehicle parameters",
-    )
-    parser.add_argument(
-        "--length",
-        action="store_true",
-        help="randomly change connector lengths in the design by a small amount",
-    )
-    parser.add_argument(
-        "--wing",
-        action="store_true",
-        help="randomly change connector lengths in the design by a small amount",
-    )
-    # parser.add_argument(
-    #     "--prop",
-    #     action="store_true",
-    #     help="randomly change connector lengths in the design by a small amount",
-    # )
-    parser.add_argument(
-        "--runs", type=int, default=1, help="the number of drag runs to complete"
-    )
-
-    parser.add_argument(
-        "--from-zip", action="store_true", help="run a drag study on a design"
+        "command", help="subcommand to execute", choices=sorted(commands)
     )
     args = parser.parse_args(sys.argv[1:pos])
 
     if args.command == "sweep":
         design_sweep.run(sys.argv[pos:])
-    else:
-        args = parser.parse_args(sys.argv[pos:])
+    elif args.command == "coffeeless-drag-model":
+        from athens_dragstudy import CoffeeLessDragModel
+
+        CoffeeLessDragModel.run(sys.argv[pos:])
+    elif args.command == "plots":
+        plots.run(sys.argv[pos:])
+    elif args.command == "drag-runner":
+        new_parser = argparse.ArgumentParser(
+            "DragRunner", formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        new_parser.add_argument(
+            "-subject",
+            type=str,
+            metavar="vehicle or component name",
+            help="the name of the drag subject of interest, can be a component or full design",
+        )
+
+        new_parser.add_argument(
+            "--baseline",
+            action="store_true",
+            help="run the drag model for the original vehicle parameters",
+        )
+        new_parser.add_argument(
+            "--length",
+            action="store_true",
+            help="randomly change connector lengths in the design by a small amount",
+        )
+        new_parser.add_argument(
+            "--wing",
+            action="store_true",
+            help="randomly change connector lengths in the design by a small amount",
+        )
+        # parser.add_argument(
+        #     "--prop",
+        #     action="store_true",
+        #     help="randomly change connector lengths in the design by a small amount",
+        # )
+        new_parser.add_argument(
+            "--runs", type=int, default=1, help="the number of drag runs to complete"
+        )
+
+        new_parser.add_argument(
+            "--from-zip", action="store_true", help="run a drag study on a design"
+        )
+        args = new_parser.parse_args(sys.argv[pos:])
 
         # subparsers = parser.add_subparsers()
         # parser_prim = subparsers.add_parser("prim")  # specify individual structures
         # parser_prim.add_argument("-struct", type=str) #choices=['rail', 'crossbar', 'tbar', 'fuselage'])
 
-        #parser_fit = subparsers.add_parser("fit")  # specify a fit method for drag data
+        # parser_fit = subparsers.add_parser("fit")  # specify a fit method for drag data
 
         # args = parser.parse_args()
-        #prim_args = parser_prim.parse_args()
+        # prim_args = parser_prim.parse_args()
 
         print(f"args are: {args}")
 
@@ -119,9 +121,11 @@ def run():
         # if args.struct:
         #     dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip, args.struct)
         # else:
-        dr = DragRunner(args.subject, args.runs, study_params, args.baseline, args.from_zip)
+        dr = DragRunner(
+            args.subject, args.runs, study_params, args.baseline, args.from_zip
+        )
 
-        #dr.set_params_and_run_drag()
+        # dr.set_params_and_run_drag()
         dr.run_dragmodel()
 
 

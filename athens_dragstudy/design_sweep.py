@@ -1,4 +1,5 @@
 import json
+from json import JSONEncoder
 import logging
 import os
 import time
@@ -7,6 +8,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List
 
+from trimesh.path.polygons import Polygon
+
+import numpy as np
 import pandas as pd
 import yaml
 from creopyson import Client
@@ -42,6 +46,18 @@ class ComponentData(BaseModel):
 
     class Config:
         allow_population_by_field_name = True
+
+
+class SpatialJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, Polygon):
+            return {
+                "area": obj.area,
+                "bounds": obj.bounds,
+            }
+        return JSONEncoder.default(self, obj)
 
 
 class DesignSweep:
@@ -99,7 +115,7 @@ class DesignSweep:
 
     def to_design_data(self) -> List[ComponentData]:
         """Returns list with necessary rotation/translation/CG terms for every component in the design."""
-        part_paths = self.creoson_client.bom_get_paths(paths=True, get_transforms=True)
+        part_paths = self.creoson_client.bom_get_paths(paths=True, get_transforms=True, top_level=True)
         all_children_paths = part_paths["children"]["children"]
         design_data = []
         for component, component_param in self.design_parameters.items():
@@ -192,7 +208,7 @@ class DesignSweep:
         design_data_dict = self.design_data_dict()
         design_params_dict = self.design_parameters_dict()
 
-        with (save_dir / "DesignData.json").open("w") as json_file:
+        with (save_dir / "designData.json").open("w") as json_file:
             json.dump(design_data_dict, json_file, indent=2)
             self.logger.debug(f"Saved design data in {save_dir / 'DesignData.json'}")
 
@@ -213,7 +229,44 @@ class DesignSweep:
             save_dir=save_dir,
         )
 
+        with (save_dir / "spatial.json").open("w") as json_file:
+            json.dump(spatial, json_file, indent=2, cls=SpatialJSONEncoder)
+            self.logger.debug(
+                f"Saved design data in {save_dir / 'spatial.json'}"
+            )
+
+        with (save_dir / "propo.json").open("w") as json_file:
+            json.dump(prop, json_file, indent=2, cls=SpatialJSONEncoder)
+            self.logger.debug(
+                f"Saved design data in {save_dir / 'propo.json'}"
+            )
+
         return drags, center
+
+    def _compute_forces_at_reference_velocity(self, fuses):
+        rho = 1.225
+        vx = vy = vz = 30
+        dfs = []
+        fuses = list(map(float, fuses))
+        for fuse, vel in zip(fuses, [vx, vy, vz]):
+            dfs.append(((fuse / (1000 ** 2)) * (rho * vel ** 2)) / 2)
+
+        return dfs
+
+    def _get_fdm_mass_properties(self):
+        mass_props = self.creoson_client.file_massprops()
+        return [
+            mass_props["mass"],
+            mass_props["gravity_center"]["x"],
+            mass_props["gravity_center"]["y"],
+            mass_props["gravity_center"]["z"],
+            mass_props["ctr_grav_inertia_tensor"]["x_axis"]["x"],
+            mass_props["ctr_grav_inertia_tensor"]["x_axis"]["y"],
+            mass_props["ctr_grav_inertia_tensor"]["x_axis"]["z"],
+            mass_props["ctr_grav_inertia_tensor"]["y_axis"]["y"],
+            mass_props["ctr_grav_inertia_tensor"]["y_axis"]["z"],
+            mass_props["ctr_grav_inertia_tensor"]["z_axis"]["z"],
+        ]
 
     def sweep(self):
         """Run the sweep with LHC sampling of the parameter ranges"""
@@ -225,9 +278,9 @@ class DesignSweep:
         samples = scale(sample=samples, l_bounds=lbounds, u_bounds=ubounds)
         ts = time.localtime()
         save_dir = (
-            self.config["description"]
-            + f"_{self.config['num_samples']}_on_"
-            + time.strftime("%Y-%m-%d-%H-%M-%S", ts)
+                self.config["description"]
+                + f"_{self.config['num_samples']}_on_"
+                + time.strftime("%Y-%m-%d-%H-%M-%S", ts)
         )
         self.logger.info(
             f"All output will be saved in {self.config['save_root']}/{save_dir}"
@@ -243,8 +296,33 @@ class DesignSweep:
                 param_list.append(change_dict["name"] + "_" + change_dict["param"])
         params_df = pd.DataFrame(
             columns=param_list
-            + ["x_fuse", "y_fuse", "z_fuse", "X_fuseuu", "Y_fusevv", "Z_fuseww", "files_location"]
+                    + [
+                        "x_fuse",
+                        "y_fuse",
+                        "z_fuse",
+                        "X_fuseuu",
+                        "Y_fusevv",
+                        "Z_fuseww",
+                        "fd_x",
+                        "fd_y",
+                        "fd_z",
+                        "mass",
+                        "x_cm",
+                        "y_cm",
+                        "z_cm",
+                        "Ixx",
+                        "Ixy",
+                        "Ixz",
+                        "Iyy",
+                        "Iyz",
+                        "Izz",
+                        "files_location"
+                    ]
         )
+        snapshot_dir = save_dir / "0"
+        os.makedirs(snapshot_dir, exist_ok=True)
+        self.run_drag_model(snapshot_dir)
+
         for j, sample in enumerate(samples):
             snapshot_dir = save_dir / f"{j + 1}"
             os.makedirs(snapshot_dir, exist_ok=True)
@@ -252,9 +330,13 @@ class DesignSweep:
                 self.propagate_parameters(changes, sample)
                 self._regenerate_assembly()
                 drags, centers = self.run_drag_model(snapshot_dir)
+                fds = self._compute_forces_at_reference_velocity(drags)
+                fdm_mass_properties = self._get_fdm_mass_properties()
                 params_df.loc[len(params_df)] = list(sample) + [
                     *centers,
                     *drags,
+                    *fds,
+                    *fdm_mass_properties,
                     snapshot_dir.resolve(),
                 ]
             except Exception as e:
@@ -265,7 +347,6 @@ class DesignSweep:
                 params_df.to_csv(save_dir / "params.csv")
 
         params_df.to_csv(save_dir / "params.csv")
-        self.set_original_params()
 
     def design_data_dict(self) -> Dict[str, Any]:
         """Returns dict with necessary rotation/translation/CG terms for every component in the design."""
@@ -281,7 +362,10 @@ class DesignSweep:
             creo_params = self.creoson_client.parameter_list(file_=name + ".prt")
             for creo_param in creo_params:
                 if creo_param["name"] in params:
-                    params[creo_param["name"]] = creo_param["value"]
+                    if isinstance(params[creo_param["name"]], str):
+                        params[creo_param["name"]] = str(creo_param["value"])
+                    elif isinstance(params[creo_param["name"]], float):
+                        params[creo_param["name"]] = float(creo_param["value"])
 
         return params_copy
 
@@ -292,7 +376,7 @@ class DesignSweep:
         ubounds = []
         for key, value in self.config["params"].items():
             assert ("min" in value and "max" in value) or (
-                "min" not in value or "max" not in value
+                    "min" not in value or "max" not in value
             )
             if "min" in value and "max" in value:
                 target_components = []
@@ -322,10 +406,11 @@ def run(args):
         if args.verbose:
             config_["loglevel"] = "DEBUG"
         design = DesignSweep(config_)
+        design.set_original_params()
         design.sweep()
+        design.set_original_params()
 
 
 if __name__ == "__main__":
     import sys
-
     run(sys.argv[1:])
