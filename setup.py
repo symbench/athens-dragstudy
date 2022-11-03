@@ -26,6 +26,9 @@ setup(
         "numpy",
         "creopyson",
         "trimesh",
+        "pyyaml",
+        "pydantic",
+        "pandas"
     ],
     entry_points={
         'console_scripts': [
