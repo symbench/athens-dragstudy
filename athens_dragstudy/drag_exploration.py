@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import trimesh
+from scipy.spatial.transform import Rotation as R
 
 from athens_dragstudy.CoffeeLessDragModel import ellipticaldrag
 
@@ -52,9 +53,6 @@ def transformation_matrix(design_data, direction="x"):
         Tform = trimesh.transformations.concatenate_matrices(rotr, Tform)
 
     return Tform
-
-
-from scipy.spatial.transform import Rotation as R
 
 
 def _calculate_drag_params(
