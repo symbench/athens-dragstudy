@@ -27,7 +27,13 @@ from athens_dragstudy.utils import DragRunner
 
 
 def run():
-    commands = ["sweep", "coffeeless-drag-model", "drag-runner", "plots"]
+    commands = [
+        "sweep",
+        "coffeeless-drag-model",
+        "drag-runner",
+        "plots",
+        "drag-exploration",
+    ]
 
     pos = len(sys.argv)
     for cmd in commands:
@@ -49,6 +55,10 @@ def run():
         from athens_dragstudy import CoffeeLessDragModel
 
         CoffeeLessDragModel.run(sys.argv[pos:])
+    elif args.command == "drag-exploration":
+        from athens_dragstudy import drag_exploration
+
+        drag_exploration.run(sys.argv[pos:])
     elif args.command == "plots":
         plots.run(sys.argv[pos:])
     elif args.command == "drag-runner":
