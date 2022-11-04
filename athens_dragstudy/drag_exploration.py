@@ -1,10 +1,14 @@
+import copy
 import json
+import os
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 import pandas as pd
 import trimesh
 from scipy.spatial.transform import Rotation as R
+from scipy.stats.qmc import LatinHypercube, scale
 
 from athens_dragstudy.CoffeeLessDragModel import ellipticaldrag
 
@@ -63,23 +67,65 @@ def _calculate_drag_params(
     direction="x",
 ):
     diafuse = (horizontal_diameter + vertical_diameter) / 2
-
-    if direction == "x":
-        axis_of_symmetry = [1, 0, 0]
-    elif direction == "y":
-        axis_of_symmetry = [0, 1, 0]
-    elif direction == "z":
-        axis_of_symmetry = [0, 0, 1]
-
     rot_angle = 90 - bottom_connector_rotation
     mat = R.from_euler("z", rot_angle, degrees=True)
-    cap_norm = mat.apply(np.array(axis_of_symmetry))
+    Tform = np.hstack((mat.as_matrix(), np.vstack([0, 0, 0])))
 
+    Tform = np.vstack((Tform, (0, 0, 0, 1)))
+
+    # if direction == "x":
+    #     axis_of_symmetry = [1, 0, 0]
+    # elif direction == "y":
+    #     axis_of_symmetry = [0, 1, 0]
+    # elif direction == "z":
+    #     axis_of_symmetry = [0, 0, 1]
+
+    if direction == "x":
+
+        rotr = trimesh.transformations.rotation_matrix(
+            np.deg2rad(0), [1, 0, 0]
+        )  # should be -90
+
+        Tform = trimesh.transformations.concatenate_matrices(rotr, Tform)
+
+    elif direction == "y":
+
+        rotr = trimesh.transformations.rotation_matrix(
+            np.deg2rad(-90), [0, 0, 1]
+        )  # should be -90
+
+        Tform = trimesh.transformations.concatenate_matrices(rotr, Tform)
+
+    elif direction == "z":
+
+        rotr = trimesh.transformations.rotation_matrix(
+            np.deg2rad(-90), [0, 1, 0]
+        )  # should be -90
+
+        Tform = trimesh.transformations.concatenate_matrices(rotr, Tform)
+
+    mesh2cad = [
+        [np.cos(3 * np.pi / 2), 0, np.sin(3 * np.pi / 2), 0],
+        [0, 1, 0, 0],
+        [-np.sin(3 * np.pi / 2), 0, np.cos(3 * np.pi / 2), 0],
+        [0, 0, 0, 1],
+    ]
+
+    mesh = trimesh.creation.cylinder(
+        diafuse / 2,
+        height=float(cyl_length),
+        transform=mesh2cad,
+        center_mass=[0, 0, 0],
+        sections=10,
+    )
+    mesh.apply_transform(Tform)
+    cap_norm = abs(mesh.symmetry_axis)
+    cap_cg = mesh.center_mass
     drag_params = {
         "ell_chord": (float(cyl_length) + diafuse) / 1000,
         "ell_len": (float(cyl_length) + diafuse) / 1000,
         "ell_dia": diafuse / 1000,
-        "ell_n": np.abs(cap_norm),
+        "ell_n": cap_norm,
         "ang": ang,
         "vel": vel,
         "mu": mu,
@@ -89,14 +135,14 @@ def _calculate_drag_params(
     return drag_params
 
 
-def ellipticaldrag_params_without_creo(fuses_params, direction="x"):
+def ellipticaldrag_params_without_creo(fuses_params: Dict, direction="x") -> Dict:
 
     assert direction in {"x", "y", "z"}
     drag_params = {}
     for name, fuse_params in fuses_params.items():
         horizontal_diameter = fuse_params["HORZ_DIAMETER"]
         vertical_diameter = fuse_params["VERT_DIAMETER"]
-        cyl_length = fuse_params.get("FUSE_CYL_LENGTH", fuses_params.get("TUBE_LENGTH"))
+        cyl_length = fuse_params.get("FUSE_CYL_LENGTH", fuse_params.get("TUBE_LENGTH"))
         bottom_connector_rotation = fuse_params["BOTTOM_CONNECTOR_ROTATION"]
         drag_params[name] = _calculate_drag_params(
             horizontal_diameter,
@@ -109,7 +155,7 @@ def ellipticaldrag_params_without_creo(fuses_params, direction="x"):
     return drag_params
 
 
-def ellipticaldrag_params(fuses_params, fuses_data, direction="x"):
+def ellipticaldrag_params(fuses_params: Dict, fuses_data: Dict, direction="x") -> Dict:
     drag_params = {}
     for (fuse_name, fuse_params), (_, fuse_data) in zip(
         fuses_params.items(), fuses_data.items()
@@ -125,7 +171,7 @@ def ellipticaldrag_params(fuses_params, fuses_data, direction="x"):
             [0, 0, 0, 1],
         ]
 
-        cyl_length = fuse_params.get("FUSE_CYL_LENGTH", fuses_params.get("TUBE_LENGTH"))
+        cyl_length = fuse_params.get("FUSE_CYL_LENGTH", fuse_params.get("TUBE_LENGTH"))
 
         mesh = trimesh.creation.cylinder(
             diafuse / 2,
@@ -159,65 +205,172 @@ def ellipticaldrag_params(fuses_params, fuses_data, direction="x"):
     return drag_params
 
 
+def force_at_reference_velocity(params: Dict) -> np.ndarray:
+    cd, cl, cf, warea = ellipticaldrag(**params)
+    rarea = warea * np.ones([1, np.size(ang)])
+    mfun = np.ones([100, Vel.shape[1]])
+    modder = np.min(mfun, axis=0)
+    drag = (
+        0.5
+        * rho
+        * Vel**2
+        * cd
+        * np.tile(rarea, [np.size(Vel, axis=0), 1])
+        * np.tile(modder, [len(vel), 1])
+    )
+    return drag
+
+
+def verify_fuselage_drag(params: pd.DataFrame, direction="x") -> None:
+    for index, row in params.iterrows():
+        parent = Path(row["files_location"]).resolve()
+        design_data = parent / "designData.json"
+        design_params = parent / "designParameters.json"
+
+        assert design_data.exists() and design_params.exists()
+
+        with design_data.open("r") as json_file:
+            design_data = json.load(json_file)
+
+        with design_params.open("r") as json_file:
+            design_params = json.load(json_file)
+
+        fuselages = list(
+            filter(
+                lambda p: "fuse" in design_params[p].get("CADPART", ""),
+                design_params,
+            )
+        )
+        all_fuselages_params = {fuse: design_params[fuse] for fuse in fuselages}
+        all_fuselages_data = {fuse: design_data[fuse] for fuse in fuselages}
+
+        elliptical_drag_params = ellipticaldrag_params(
+            all_fuselages_params, all_fuselages_data, direction
+        )
+        elliptical_drag_params_copy = ellipticaldrag_params_without_creo(
+            all_fuselages_params, direction
+        )
+        for key, value in elliptical_drag_params.items():
+            assert np.allclose(
+                value["ell_n"], elliptical_drag_params_copy[key]["ell_n"]
+            )
+            drag = force_at_reference_velocity(value)
+            print(f"{parent}, Drag_{direction} at 30 m/sec => {drag[1, 1]} N")
+
+
+def list_float(input_str):
+    values = input_str.split(",")
+    assert len(values) == 4
+    return list(map(float, values))
+
+
+def sample_fuselage_drag(save_dir, samples=100, seed=42):
+    save_dir = Path(save_dir).resolve()
+    if not save_dir.exists():
+        os.makedirs(save_dir)
+
+    params = {
+        "BOTTOM_CONNECTOR_ROTATION": (0, 360),
+        "VERT_DIAMETER": (70, 170),
+        "HORZ_DIAMETER": (140, 240),
+        "FUSE_CYL_LENGTH": (100, 300),
+    }
+    lbounds = []
+    ubounds = []
+    for key, value in params.items():
+        lbounds.append(value[0])
+        ubounds.append(value[1])
+
+    sampler = LatinHypercube(d=len(ubounds), centered=True, seed=seed)
+    samples = sampler.random(samples)
+    samples = scale(sample=samples, l_bounds=lbounds, u_bounds=ubounds)
+    drags = []
+    for sample in samples:
+        sample_dict = {key: sample[i] for i, key in enumerate(params)}
+        print(f"Calculating fuselage drag for \n {json.dumps(sample_dict, indent=2)}")
+        for d in ["x", "y", "z"]:
+            drag_params = ellipticaldrag_params_without_creo(
+                {"fuselage": sample_dict}, direction=d
+            )
+            df = force_at_reference_velocity(drag_params["fuselage"])
+            sample_dict[f"drag_{d}"] = df[1, 1]
+        drags.append(sample_dict)
+    drags_df = pd.DataFrame.from_records(drags)
+    drags_df.to_csv(save_dir / "sample-elliptical-drag.csv", index=False)
+
+
+def fuselage_drag_single_run(params):
+    forces = copy.deepcopy(params)
+    for d in ["x", "y", "z"]:
+        drag_params = ellipticaldrag_params_without_creo(
+            {"fuselage": params}, direction=d
+        )
+        f = force_at_reference_velocity(drag_params["fuselage"])
+        forces[f"drag_force_{d}"] = f[1, 1]
+    return forces
+
+
 def run(args=None):
+    import sys
     from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
     parser = ArgumentParser(
         "DragExploration", formatter_class=ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "drag-func", choices=["elliptical-drag"], help="Which drag function to run"
+        "drag-func",
+        choices=[
+            "fuselage-drag-from-experiment",
+            "sample-fuselage-drag",
+            "fuselage-drag-single-run",
+        ],
+        help="Which drag function to run",
     )
-    parser.add_argument("--exp-dir", help="The experiment directory to run it from")
-    parser.add_argument("--direction", help="The drag direction", type=str, default="x")
+    parser.add_argument(
+        "--exp-dir",
+        help="The experiment directory/save directory",
+        required="fuselage-drag-from-experiment" in sys.argv,
+    )
+    parser.add_argument(
+        "--drag-direction", help="The drag direction", type=str, default="x"
+    )
+    parser.add_argument(
+        "--fuselage-parameters",
+        type=list_float,
+        required="fuselage-drag-single-run" in sys.argv,
+        help="parameters as comma separated list VERT_DIAMETER,HORZ_DIAMETER,CYL_LENGTH,BOTTOM_CONNECTOR_ROTATION",
+        metavar="VERT_DIAMETER,HORZ_DIAMETER,CYL_LENGTH,BOTTOM_CONNECTOR_ROTATION",
+    )
+    parser.add_argument(
+        "--save-dir",
+        help="where to save the output files",
+        required="sample-fuselage-drag" in sys.argv,
+    )
+    parser.add_argument(
+        "--sample-size",
+        "-n",
+        help="Number of samples to generate",
+        type=int,
+        required="sample-fuselage-drag" in sys.argv,
+    )
+    parser.add_argument("--random-seed", type=int, help="The random seed", default=42)
     args = parser.parse_args(args)
 
-    exp_dir = Path(args.exp_dir).resolve()
-    params = pd.read_csv(exp_dir / "params.csv")
-    if getattr(args, "drag-func") == "elliptical-drag":
-        for index, row in params.iterrows():
-            parent = Path(row["files_location"]).resolve()
-            design_data = parent / "designData.json"
-            design_params = parent / "designParameters.json"
+    if getattr(args, "drag-func") == "fuselage-drag-from-experiment":
+        exp_dir = Path(args.exp_dir).resolve()
+        params = pd.read_csv(exp_dir / "params.csv")
+        verify_fuselage_drag(params, args.drag_direction)
 
-            assert design_data.exists() and design_params.exists()
+    elif getattr(args, "drag-func") == "sample-fuselage-drag":
+        sample_fuselage_drag(args.save_dir, args.sample_size, args.random_seed)
 
-            with design_data.open("r") as json_file:
-                design_data = json.load(json_file)
-
-            with design_params.open("r") as json_file:
-                design_params = json.load(json_file)
-
-            fuselages = list(
-                filter(
-                    lambda p: "fuse" in design_params[p].get("CADPART", ""),
-                    design_params,
-                )
-            )
-            all_fuselages_params = {fuse: design_params[fuse] for fuse in fuselages}
-            all_fuselages_data = {fuse: design_data[fuse] for fuse in fuselages}
-
-            elliptical_drag_params = ellipticaldrag_params(
-                all_fuselages_params, all_fuselages_data, args.direction
-            )
-            elliptical_drag_params_copy = ellipticaldrag_params_without_creo(
-                all_fuselages_params, args.direction
-            )
-            for key, value in elliptical_drag_params.items():
-                print(value, elliptical_drag_params_copy[key])
-                assert np.allclose(
-                    value["ell_n"], elliptical_drag_params_copy[key]["ell_n"]
-                )
-                cd, cl, cf, warea = ellipticaldrag(**value)
-                rarea = warea * np.ones([1, np.size(ang)])
-                mfun = np.ones([100, Vel.shape[1]])
-                modder = np.min(mfun, axis=0)
-                drag = (
-                    0.5
-                    * rho
-                    * Vel**2
-                    * cd
-                    * np.tile(rarea, [np.size(Vel, axis=0), 1])
-                    * np.tile(modder, [len(vel), 1])
-                )
-                print(f"{parent.name}, Drag_{args.direction} => {drag[1, 1]}")
+    elif getattr(args, "drag-func") == "fuselage-drag-single-run":
+        params = args.fuselage_parameters
+        params = {
+            "VERT_DIAMETER": params[0],
+            "HORZ_DIAMETER": params[1],
+            "FUSE_CYL_LENGTH": params[2],
+            "BOTTOM_CONNECTOR_ROTATION": params[3],
+        }
+        forces = fuselage_drag_single_run(params)
+        print(f"Drag at 30m/sec in direction = {json.dumps(forces, indent=2)}")

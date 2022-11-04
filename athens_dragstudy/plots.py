@@ -45,7 +45,7 @@ def plot_drag_contribution(
             if "wing" in component_params["CADPART"]:
                 running_sum_wing_drag += component_drag
             else:
-                component_drag_dicts[component] = component_drag / total_drag * 100
+                component_drag_dicts[component] = component_drag
             running_sum_drag += component_drag
     print(
         total_drag,
@@ -167,6 +167,7 @@ def run(args=None):
                     save_name=parent
                     / f"drag_{args.drag_direction or 'x'}_contributions.png",
                 )
+                components_drag_dict["files"] = str(parent)
                 drag_dicts.append(components_drag_dict)
         drags_df = pd.DataFrame.from_records(drag_dicts)
         drags_df.to_csv(args.save_as or exp_dir / "non-wing-drag-contribs.csv")
