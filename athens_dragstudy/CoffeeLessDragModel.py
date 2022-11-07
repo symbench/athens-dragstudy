@@ -2226,7 +2226,7 @@ def run(args=None):
         debug=True,
         stl_output=True,
         struct=True,
-        save_dir=".",
+        save_dir=args.save_directory,
     )
     print(drags, center)
     return drags, center, spatial, parameter, structure, prop, J_scale, T_scale

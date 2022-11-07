@@ -1,0 +1,38 @@
+description: PickAxeVUBottomConnectorOffsets
+design_name: PickAxeVU
+assembly_path: "C:\\Users\\umesh\\Documents\\CreoUAVs\\PickAxeNew\\uav.asm"
+creoson_host: "localhost"
+creoson_port: "9056"
+parameter_map: "C:\\Users\\umesh\\swri\\athens-dragstudy\\athens_dragstudy\\data\\design_zips\\PickAxeNew\\archive\\result_1\\designParameters.json"
+save_root: "experiments"
+fdm:
+  Analysis_Type: 3
+  Ctrl_R: 0.1
+  Flight_Path:
+    - 1
+    - 3
+    - 4
+    - 5
+  Q_Angles: 1
+  Q_Angular_Velocity: 1
+  Q_Position: 1
+  Q_Velocity: 1
+  Requested_Lateral_Speed: 1
+  Requested_Vertical_Speed: 19
+num_samples: 10
+random_seed: 42
+loglevel: "INFO"
+params:
+  capsule_fuselage_FUSE_BOTTOM_CONNECTOR_OFFSET_LENGTH:
+    min: -10
+    max: 10
+    components:
+      - fuselage
+    parameter: BOTTOM_CONNECTOR_OFFSET_LENGTH
+
+  capsule_fuselage_FUSE_BOTTOM_CONNECTOR_OFFSET_WIDTH:
+    min: -10
+    max: 10
+    components:
+      - fuselage
+    parameter: BOTTOM_CONNECTOR_OFFSET_WIDTH
