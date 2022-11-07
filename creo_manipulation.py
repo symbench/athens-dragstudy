@@ -16,6 +16,7 @@ from numpy import isin
 # from symbench_athens_client.models.uam_components import Wings
 # from symbench_athens_client.models.uam_components import Cylinders
 
+from scipy.stats.qmc import LatinHypercube, scale
 
 from tqdm import tqdm
 import time
@@ -148,7 +149,7 @@ def erase(client, erase_children=True):
     print(f"regenerate time: {e-s}s returns type: {type(result), result}")
 
 
-def collect_massprops(subject, with_tforms=False):
+def collect_massprops(subject, num_samples=1000, with_tforms=False):
     assert subject in ["capsule", "uavwing"], f"invalid massprops subject {subject}"  # new components to study must go here
 
     header = ["subject", "xmin", "xmax", "ymin", "ymax", "zmin", "zmax", "surface_area", "cg_x", "cg_y",
@@ -157,14 +158,16 @@ def collect_massprops(subject, with_tforms=False):
     print(f"sweeping massprops for {subject}")
 
     if with_tforms:
-        fname = f"./{subject}_bbox_mprops_tforms.csv"
+        fname = f"./{subject}_bbox_mprops_params.csv"
     else:
-        fname = f"./{subject}_bbox_mprops.csv"
+        fname = f"./{subject}_bbox_mprops_params_floor_ht.csv"
 
     if subject == "uavwing":
 
+        header.extend(["CHORD_1", "CHORD_2", "SPAN"])
+
         with open(fname, "a") as f:
-            writer = csv.DictWriter(f, header)
+            writer = csv.DictWriter(f, fieldnames=header)
             writer.writeheader()
 
             # for hd in range(200, 1000, 50):  # HORZ_DIAMETER
@@ -173,8 +176,8 @@ def collect_massprops(subject, with_tforms=False):
                         # set_property(creo_client, capsule, "HORZ_DIAMETER", hd)
                         # set_property(creo_client, capsule, "VERT_DIAMETER", vd)
                         # set_property(creo_client, capsule, "TUBE_LENGTH", tl)
-            for cd in range(100, 1000, 20):  # CHORD
-                for sp in range(200, 1000, 20): # SPAN
+            for cd in range(500, 820, 20):  # CHORD
+                for sp in range(200, 1220, 20): # SPAN
                         set_property(creo_client, uavwing, "CHORD_1", cd)
                         set_property(creo_client, uavwing, "CHORD_2", cd)
                         set_property(creo_client, uavwing, "SPAN", sp)
@@ -189,7 +192,7 @@ def collect_massprops(subject, with_tforms=False):
                         if with_tforms:
                             bbox.update(tforms)
 
-                        print(bbox)
+                        #print(bbox)
                         res = {
                             'subject': 'uavwing',
                             'xmin': bbox['xmin'],
@@ -207,79 +210,124 @@ def collect_massprops(subject, with_tforms=False):
                             'volume': mprops['volume'],
                             'cg_inert_tensor_x': mprops['ctr_grav_inertia_tensor']['x_axis']['x'],
                             'cg_inert_tensor_y': mprops['ctr_grav_inertia_tensor']['y_axis']['y'],
-                            'cg_inert_tensor_z': mprops['ctr_grav_inertia_tensor']['z_axis']['z']
+                            'cg_inert_tensor_z': mprops['ctr_grav_inertia_tensor']['z_axis']['z'],
+                            'CHORD_1': cd,
+                            'CHORD_2': cd,
+                            'SPAN': sp
                         }
+
+                        print(f"CHORD_1: {cd}, CHORD_2: {cd}, SPAN: {sp}")
 
                         writer.writerow(res)
     elif subject == "capsule":
+
+        header.extend(["HORZ_DIAMETER", "VERT_DIAMETER", "CYL_FUSE_LENGTH"])
+
         with open(fname, "a") as f:
-            writer = csv.DictWriter(f, header)
+            writer = csv.DictWriter(f, fieldnames=header)
             writer.writeheader()
 
-            for hd in range(200, 2000, 50):  # HORZ_DIAMETER
-                for vd in range(200, 2000, 50): # VERT_DIAMETER
-                    for tl in range(200, 2000, 50):  # TUBE_LENGTH
-                        set_property(creo_client, capsule, "HORZ_DIAMETER", hd)
-                        set_property(creo_client, capsule, "VERT_DIAMETER", vd)
-                        set_property(creo_client, capsule, "TUBE_LENGTH", tl)
+            lbounds = [60, 60, 50, 3]
+            ubounds = [400, 400, 500, 30]
+            sampler = LatinHypercube(d=len(ubounds), centered=True, seed=42)
+            samples = sampler.random(num_samples)
+            samples = scale(samples=samples, l_bounds=lbounds, u_bounds=ubounds) 
 
-                        regenerate(creo_client)
-                        if with_tforms:
-                            tforms = get_transform(creo_client, capsule)
-                        bbox = get_bounding_box(creo_client, capsule)
-                        mprops = get_massprops(creo_client, capsule)
+            for sample in samples:
+                hd, vd, tl, fh = sample
+                set_property(creo_client, capsule, "HORZ_DIAMETER", hd)
+                set_property(creo_client, capsule, "VERT_DIAMETER", vd)
+                set_property(creo_client, capsule, "FUSE_CYL_LENGTH", tl)
+                set_property(creo_client, capsule, "FLOOR_HEIGHT", fh)
 
-                        bbox.update(mprops)
+                regenerate(creo_client)
+                            
+                bbox = get_bounding_box(creo_client, capsule)
+                mprops = get_massprops(creo_client, capsule)
 
-                        if with_tforms:
-                            bbox.update(tforms)
+                bbox.update(mprops)
 
-                        print(bbox)
-                        res = {
-                            'subject': subject,
-                            'xmin': bbox['xmin'],
-                            'xmax': bbox['xmax'],
-                            'ymin': bbox['ymin'],
-                            'ymax': bbox['ymax'],
-                            'zmin': bbox['zmin'],
-                            'zmax': bbox['zmax'],
-                            'surface_area': mprops['surface_area'],
-                            'cg_x': mprops['gravity_center']['x'],
-                            'cg_y': mprops['gravity_center']['y'],
-                            'cg_z': mprops['gravity_center']['z'],
-                            'density': mprops['density'],
-                            'mass': mprops['mass'],
-                            'volume': mprops['volume'],
-                            'cg_inert_tensor_x': mprops['ctr_grav_inertia_tensor']['x_axis']['x'],
-                            'cg_inert_tensor_y': mprops['ctr_grav_inertia_tensor']['y_axis']['y'],
-                            'cg_inert_tensor_z': mprops['ctr_grav_inertia_tensor']['z_axis']['z']
-                        }
+                res = {
+                    'subject': subject,
+                    'xmin': bbox['xmin'],
+                    'xmax': bbox['xmax'],
+                    'ymin': bbox['ymin'],
+                    'ymax': bbox['ymax'],
+                    'zmin': bbox['zmin'],
+                    'zmax': bbox['zmax'],
+                    'surface_area': mprops['surface_area'],
+                    'cg_x': mprops['gravity_center']['x'],
+                    'cg_y': mprops['gravity_center']['y'],
+                    'cg_z': mprops['gravity_center']['z'],
+                    'density': mprops['density'],
+                    'mass': mprops['mass'],
+                    'volume': mprops['volume'],
+                    'cg_inert_tensor_x': mprops['ctr_grav_inertia_tensor']['x_axis']['x'],
+                    'cg_inert_tensor_y': mprops['ctr_grav_inertia_tensor']['y_axis']['y'],
+                    'cg_inert_tensor_z': mprops['ctr_grav_inertia_tensor']['z_axis']['z'],
+                    'HORZ_DIAMETER': hd,
+                    'VERT_DIAMETER': vd,
+                    'FUSE_CYL_LENGTH': tl,
+                    'FLOOR_HEIGHT': fh
+                }
 
-                        writer.writerow(res)
+                    #print(f"HORZ_DIAMETER: {hd}, VERT_DIAMETER: {vd}, TUBE_LENGTH: {tl}")
+
+                writer.writerow(res)
+
+
+
+            # for hd in range(780, 1020, 20):  # HORZ_DIAMETER
+            #     for vd in range(70, 100, 20): # VERT_DIAMETER
+            #         for tl in range(950, 1550, 50):  # TUBE_LENGTH
+            #             for fh in range(3, int(vd/2), 10): 
+            #                 set_property(creo_client, capsule, "HORZ_DIAMETER", hd)
+            #                 set_property(creo_client, capsule, "VERT_DIAMETER", vd)
+            #                 set_property(creo_client, capsule, "CYL_FUSE_LENGTH", tl)
+
+            #                 regenerate(creo_client)
+            #                 if with_tforms:
+            #                     tforms = get_transform(creo_client, capsule)
+            #                 bbox = get_bounding_box(creo_client, capsule)
+            #                 mprops = get_massprops(creo_client, capsule)
+
+            #                 bbox.update(mprops)
+
+            #                 if with_tforms:
+            #                     bbox.update(tforms)
+
+            #                 #print(bbox)
+            #                 res = {
+            #                     'subject': subject,
+            #                     'xmin': bbox['xmin'],
+            #                     'xmax': bbox['xmax'],
+            #                     'ymin': bbox['ymin'],
+            #                     'ymax': bbox['ymax'],
+            #                     'zmin': bbox['zmin'],
+            #                     'zmax': bbox['zmax'],
+            #                     'surface_area': mprops['surface_area'],
+            #                     'cg_x': mprops['gravity_center']['x'],
+            #                     'cg_y': mprops['gravity_center']['y'],
+            #                     'cg_z': mprops['gravity_center']['z'],
+            #                     'density': mprops['density'],
+            #                     'mass': mprops['mass'],
+            #                     'volume': mprops['volume'],
+            #                     'cg_inert_tensor_x': mprops['ctr_grav_inertia_tensor']['x_axis']['x'],
+            #                     'cg_inert_tensor_y': mprops['ctr_grav_inertia_tensor']['y_axis']['y'],
+            #                     'cg_inert_tensor_z': mprops['ctr_grav_inertia_tensor']['z_axis']['z'],
+            #                     'HORZ_DIAMETER': hd,
+            #                     'VERT_DIAMETER': vd,
+            #                     'TUBE_LENGTH': tl
+            #                 }
+
+            #                 print(f"HORZ_DIAMETER: {hd}, VERT_DIAMETER: {vd}, TUBE_LENGTH: {tl}")
+
+            #                 writer.writerow(res)
 
 def build_random_substructure():
     pass
 
 if __name__ == "__main__":
-
-
-    #print('buildtree iter ',conn)
-
-            # fr_comp = conn["FROM_COMP"]
-
-            # fr_part =  fr_comp+".PRT"
-
-            # to_comp = conn["TO_COMP"]
-
-            # to_part = to_comp+".PRT"
-
-            # fr_csys = conn["FROM_CONN_CS"]# +"_CS"
-
-            # to_csys = conn["TO_CONN_CS"] # +"_CS"
-
-            # constraint = {'type':'csys','asmref':fr_csys,'compref':to_csys}
-            # retval = creopyson.file.assemble(c,to_part,path=parent_path,constraints=cons)
-
 
     prt_path = "C:\\JWork\\Agents\\uam-uav-models\\CAD"
     uav_uam_models = os.listdir(prt_path)
@@ -294,50 +342,31 @@ if __name__ == "__main__":
     creo_client = Client(ip_adress="localhost", port=9056)
     creo_client.connect()
 
-    creo_client.file_open(
-       blank,
-       dirname=prt_path
-    #os.getcwd() + "\\" + "TestBench_CADTB_V1"
-    )
-
-    def find_path(creo_client, pname):
-        print("find_path for ", pname)
-        part_paths = creopyson.bom.get_paths(creo_client,paths=True)
-        children = part_paths['children']['children']  
-        for ch in children:
-            if ch['file'] == pname.upper():
-                print('found', ch)
-                return(ch['path'])
+    # def find_path(creo_client, pname):
+    #     print("find_path for ", pname)
+    #     part_paths = creopyson.bom.get_paths(creo_client,paths=True)
+    #     children = part_paths['children']['children']  
+    #     for ch in children:
+    #         if ch['file'] == pname.upper():
+    #             print('found', ch)
+    #             return(ch['path'])
     
     frm = "PRT_CSYS_DEF"
-    #to = "BASE_CS_IN"
-    # #constraints = {'type':'csys','asmref': blank,'compref': frm}
     constraints = {'type':'csys','asmref': blank,'compref': frm}
-    assemble(creo_client, orient)
-    assemble(creo_client, capsule)
-    cp = find_path(creo_client, capsule)
-    assemble(creo_client, tube, path=cp)
 
-    #assemble(creo_client, uavwing, constraints)
-    # constraint = {'type':'csys','asmref':'ASM_DEF_CSYS','compref':"PRT_CSYS_DEF"}
-    #print(creopyson.bom.get_paths(creo_client, paths=True, get_transforms=True))
-    # print(creopyson.file.assemble(creo_client, orient, constraints, assemble_to_root=True))
-
-    # # get the Creo name for the part (an index number)
-    
-    # child_path = find_path(creo_client, orient)
-
-
-
-    # print(creopyson.file.assemble(creo_client, capsule, constraint, suppress=True))
-    # print(creopyson.file.assemble(creo_client, uavwing, constraint, suppress=True))
-
-    # #print(get_paths(creo_client))
 
     # # massprop collection for drag model
-    # subject = "uavwing"
-    #collect_massprops(subject)
-    #print(get_transform(creo_client, capsule))
+    for subject in ["capsule", "uavwing"]:
+        if subject == "uavwing":
+            prt_file = uavwing
+        elif subject == "capsule":
+            prt_file = capsule
+
+        creo_client.file_open(
+            prt_file,
+            dirname=prt_path
+        )
+        collect_massprops(subject)
 
 
     

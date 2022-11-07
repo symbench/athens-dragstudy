@@ -23,8 +23,6 @@ import matplotlib.pyplot as plt
 from athens_dragstudy import design_sweep, plots
 from athens_dragstudy.utils import DragRunner
 
-# VALID_VEHICLES = UAM_VEHICLES + UAV_VEHICLES
-
 
 def run():
     commands = [
@@ -87,11 +85,7 @@ def run():
             action="store_true",
             help="randomly change connector lengths in the design by a small amount",
         )
-        # parser.add_argument(
-        #     "--prop",
-        #     action="store_true",
-        #     help="randomly change connector lengths in the design by a small amount",
-        # )
+
         new_parser.add_argument(
             "--runs", type=int, default=1, help="the number of drag runs to complete"
         )
@@ -101,42 +95,11 @@ def run():
         )
         args = new_parser.parse_args(sys.argv[pos:])
 
-        # subparsers = parser.add_subparsers()
-        # parser_prim = subparsers.add_parser("prim")  # specify individual structures
-        # parser_prim.add_argument("-struct", type=str) #choices=['rail', 'crossbar', 'tbar', 'fuselage'])
+    study_params = ["length"]
 
-        # parser_fit = subparsers.add_parser("fit")  # specify a fit method for drag data
-
-        # args = parser.parse_args()
-        # prim_args = parser_prim.parse_args()
-
-        print(f"args are: {args}")
-
-        # if args.fit and args.vehicle:
-        #     fit.run(args.vehicle)
-        #     sys.exit(0)
-        # elif args.fit and not args.vehicle:
-        #     print("need to specify a vehicle to fit its data")
-        #     sys.exit(0)
-
-        study_params = ["length"]
-        # if args.length:
-        #     study_params.append("length")
-        # # if args.prop:
-        # #     study_params.append("prop")
-        # if args.wing:
-        #     study_params.append("wing")
-        print(f"study params are: {study_params}")
-
-        # if args.struct:
-        #     dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip, args.struct)
-        # else:
-        dr = DragRunner(
-            args.subject, args.runs, study_params, args.baseline, args.from_zip
-        )
-
-        # dr.set_params_and_run_drag()
-        dr.run_dragmodel()
+    dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip)
+    #dr.set_params_and_run_drag()
+    dr.run_dragmodel()
 
 
 if __name__ == "__main__":
