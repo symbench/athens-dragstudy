@@ -12,6 +12,9 @@ from scipy.stats.qmc import LatinHypercube, scale
 
 from athens_dragstudy.CoffeeLessDragModel import ellipticaldrag
 
+import sys
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+
 vp = 1  # 5  # 30 m/s
 ap = 1  # 4  # +0 deg
 mp = 100  # 50#scale of arrows? 50 for UAM, 100 for UAV works well
@@ -299,9 +302,13 @@ def sample_fuselage_drag(save_dir, samples=100, seed=42):
     drags_df.to_csv(save_dir / "sample-elliptical-drag.csv", index=False)
 
 
-def fuselage_drag_single_run(params):
+def fuselage_drag_single_run(params, direction="all"):
     forces = copy.deepcopy(params)
-    for d in ["x", "y", "z"]:
+    if direction == "all":
+        directions = list("xyz")
+    else:
+        directions = list(direction)
+    for d in directions:
         drag_params = ellipticaldrag_params_without_creo(
             {"fuselage": params}, direction=d
         )
@@ -311,29 +318,27 @@ def fuselage_drag_single_run(params):
 
 
 def run(args=None):
-    import sys
-    from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
     parser = ArgumentParser(
         "DragExploration", formatter_class=ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "drag-func",
+        "command",
         choices=[
             "fuselage-drag-from-experiment",
             "sample-fuselage-drag",
             "fuselage-drag-single-run",
+            "sweep-all-rotations",
         ],
-        help="Which drag function to run",
+        help="Which drag function to explore run",
     )
     parser.add_argument(
         "--exp-dir",
         help="The experiment directory/save directory",
-        required="fuselage-drag-from-experiment" in sys.argv,
+        required="fuselage-drag-from-experiment" in sys.argv
+        or "sweep-all-rotations" in sys.argv,
     )
-    parser.add_argument(
-        "--drag-direction", help="The drag direction", type=str, default="x"
-    )
+    parser.add_argument("--drag-direction", help="The drag direction", type=str)
     parser.add_argument(
         "--fuselage-parameters",
         type=list_float,
@@ -344,7 +349,8 @@ def run(args=None):
     parser.add_argument(
         "--save-dir",
         help="where to save the output files",
-        required="sample-fuselage-drag" in sys.argv,
+        required="sample-fuselage-drag" in sys.argv
+        or "sweep-all-rotations" in sys.argv,
     )
     parser.add_argument(
         "--sample-size",
@@ -356,15 +362,15 @@ def run(args=None):
     parser.add_argument("--random-seed", type=int, help="The random seed", default=42)
     args = parser.parse_args(args)
 
-    if getattr(args, "drag-func") == "fuselage-drag-from-experiment":
+    if getattr(args, "command") == "fuselage-drag-from-experiment":
         exp_dir = Path(args.exp_dir).resolve()
         params = pd.read_csv(exp_dir / "params.csv")
         verify_fuselage_drag(params, args.drag_direction)
 
-    elif getattr(args, "drag-func") == "sample-fuselage-drag":
+    elif getattr(args, "command") == "sample-fuselage-drag":
         sample_fuselage_drag(args.save_dir, args.sample_size, args.random_seed)
 
-    elif getattr(args, "drag-func") == "fuselage-drag-single-run":
+    elif getattr(args, "command") == "fuselage-drag-single-run":
         params = args.fuselage_parameters
         params = {
             "VERT_DIAMETER": params[0],
@@ -372,5 +378,37 @@ def run(args=None):
             "FUSE_CYL_LENGTH": params[2],
             "BOTTOM_CONNECTOR_ROTATION": params[3],
         }
-        forces = fuselage_drag_single_run(params)
+        forces = fuselage_drag_single_run(params, args.drag_direction or "all")
         print(f"Drag at 30m/sec in direction = {json.dumps(forces, indent=2)}")
+
+    elif getattr(args, "command") == "sweep-all-rotations":
+        parent = Path(args.exp_dir).resolve()
+        root_params = parent / "0" / "designParameters.json"
+        with root_params.open("r") as params_file:
+            params = json.load(params_file)
+
+            for component, component_params in params.items():
+                if "fuse_capsule_new" in component_params.get("CADPART", ""):
+                    fuselage_params = {
+                        "VERT_DIAMETER": component_params["VERT_DIAMETER"],
+                        "HORZ_DIAMETER": component_params["HORZ_DIAMETER"],
+                        "FUSE_CYL_LENGTH": component_params["FUSE_CYL_LENGTH"],
+                        "BOTTOM_CONNECTOR_ROTATION": component_params["BOTTOM_CONNECTOR_ROTATION"],
+                    }
+                    drags = []
+                    for j in range(0, 360):
+                        fuselage_params["BOTTOM_CONNECTOR_ROTATION"] = float(j)
+                        drags.append(
+                            fuselage_drag_single_run(fuselage_params, "all")
+                        )
+
+                if len(drags) == 0:
+                    raise ValueError("Capsule fuselage not found")
+                drags_df = pd.DataFrame.from_records(drags)
+                drags_df.to_csv(
+                    Path(args.save_dir) / "all-rotation-sweeps.csv", index=False
+                )
+
+
+if __name__ == "__main__":
+    run(sys.argv)
