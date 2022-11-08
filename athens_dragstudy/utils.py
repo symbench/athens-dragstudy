@@ -448,3 +448,23 @@ class DragRunner:
         # self.write_json()
         print(f"changed: {changed}")
         return changed
+
+
+def get_data_file_path(name):
+    return os.path.join(DATA_PATH, name)
+
+
+def get_capsule_massprops_data():
+    return get_data_file_path("massprops\\capsule\\capsule_bbox_mprops_params_floor_ht.csv")
+
+
+def list_str(values):
+    splitted = values.split(",")
+    assert len(splitted) < 4
+    return splitted
+
+
+def list_float(input_str):
+    values = input_str.split(",")
+    assert len(values) == 4
+    return list(map(float, values))

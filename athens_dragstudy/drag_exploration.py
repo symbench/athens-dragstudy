@@ -1,6 +1,8 @@
 import copy
 import json
 import os
+import sys
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from pathlib import Path
 from typing import Dict
 
@@ -11,9 +13,7 @@ from scipy.spatial.transform import Rotation as R
 from scipy.stats.qmc import LatinHypercube, scale
 
 from athens_dragstudy.CoffeeLessDragModel import ellipticaldrag
-
-import sys
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+from athens_dragstudy.utils import list_float
 
 vp = 1  # 5  # 30 m/s
 ap = 1  # 4  # +0 deg
@@ -261,12 +261,6 @@ def verify_fuselage_drag(params: pd.DataFrame, direction="x") -> None:
             print(f"{parent}, Drag_{direction} at 30 m/sec => {drag[1, 1]} N")
 
 
-def list_float(input_str):
-    values = input_str.split(",")
-    assert len(values) == 4
-    return list(map(float, values))
-
-
 def sample_fuselage_drag(save_dir, samples=100, seed=42):
     save_dir = Path(save_dir).resolve()
     if not save_dir.exists():
@@ -393,14 +387,14 @@ def run(args=None):
                         "VERT_DIAMETER": component_params["VERT_DIAMETER"],
                         "HORZ_DIAMETER": component_params["HORZ_DIAMETER"],
                         "FUSE_CYL_LENGTH": component_params["FUSE_CYL_LENGTH"],
-                        "BOTTOM_CONNECTOR_ROTATION": component_params["BOTTOM_CONNECTOR_ROTATION"],
+                        "BOTTOM_CONNECTOR_ROTATION": component_params[
+                            "BOTTOM_CONNECTOR_ROTATION"
+                        ],
                     }
                     drags = []
                     for j in range(0, 360):
                         fuselage_params["BOTTOM_CONNECTOR_ROTATION"] = float(j)
-                        drags.append(
-                            fuselage_drag_single_run(fuselage_params, "all")
-                        )
+                        drags.append(fuselage_drag_single_run(fuselage_params, "all"))
 
                 if len(drags) == 0:
                     raise ValueError("Capsule fuselage not found")

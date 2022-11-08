@@ -28,7 +28,9 @@ setup(
         "trimesh",
         "pyyaml",
         "pydantic",
-        "pandas"
+        "pandas",
+        "scipy",
+        "scikit-learn"
     ],
     entry_points={
         'console_scripts': [
