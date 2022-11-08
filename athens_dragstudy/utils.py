@@ -396,18 +396,11 @@ class DragRunner:
                         new_len = self.get_random_param_value(orig_len)
 
                         # print(f"orig_val is {orig_len} + {change} = {new_len}")
-<<<<<<< Updated upstream
-                        changed[structure][length_key] = (orig_len, new_len)
-                        self.paramdict[structure][length_key] = new_len
-            print(changed)
-                        #break  # change only the first length, we assume the first length is the most important
-=======
 
                         # indicate which length_param changed
                         changed[structure][length_key]= (orig_len, new_len)
                         self.paramdict[structure][length_key] = new_len
                     #break  # change only the first length, we assume the first length is the most important
->>>>>>> Stashed changes
        
         elif "wing" in self.study_params:
 
@@ -453,12 +446,5 @@ class DragRunner:
                             changed[structure] = {names[idx]: (orig_val, new_val)}
                         self.paramdict[structure][names[idx]] = new_val
         # self.write_json()
-<<<<<<< Updated upstream
-        return changed
-
-if __name__ == "__main__":
-    plot_results()
-=======
         print(f"changed: {changed}")
         return changed
->>>>>>> Stashed changes

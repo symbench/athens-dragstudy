@@ -221,9 +221,9 @@ def collect_massprops(subject, num_samples=1000, with_tforms=False):
                         writer.writerow(res)
     elif subject == "capsule":
 
-        header.extend(["HORZ_DIAMETER", "VERT_DIAMETER", "CYL_FUSE_LENGTH"])
+        header.extend(["HORZ_DIAMETER", "VERT_DIAMETER", "FUSE_CYL_LENGTH", "FLOOR_HEIGHT"])
 
-        with open(fname, "a") as f:
+        with open(fname, "a", newline='') as f:
             writer = csv.DictWriter(f, fieldnames=header)
             writer.writeheader()
 
@@ -231,7 +231,7 @@ def collect_massprops(subject, num_samples=1000, with_tforms=False):
             ubounds = [400, 400, 500, 30]
             sampler = LatinHypercube(d=len(ubounds), centered=True, seed=42)
             samples = sampler.random(num_samples)
-            samples = scale(samples=samples, l_bounds=lbounds, u_bounds=ubounds) 
+            samples = scale(samples, l_bounds=lbounds, u_bounds=ubounds) 
 
             for sample in samples:
                 hd, vd, tl, fh = sample
@@ -341,22 +341,13 @@ if __name__ == "__main__":
 
     creo_client = Client(ip_adress="localhost", port=9056)
     creo_client.connect()
-
-    # def find_path(creo_client, pname):
-    #     print("find_path for ", pname)
-    #     part_paths = creopyson.bom.get_paths(creo_client,paths=True)
-    #     children = part_paths['children']['children']  
-    #     for ch in children:
-    #         if ch['file'] == pname.upper():
-    #             print('found', ch)
-    #             return(ch['path'])
     
     frm = "PRT_CSYS_DEF"
     constraints = {'type':'csys','asmref': blank,'compref': frm}
 
 
     # # massprop collection for drag model
-    for subject in ["capsule", "uavwing"]:
+    for subject in ["capsule"]:
         if subject == "uavwing":
             prt_file = uavwing
         elif subject == "capsule":
