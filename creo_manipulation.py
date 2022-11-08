@@ -149,7 +149,7 @@ def erase(client, erase_children=True):
     print(f"regenerate time: {e-s}s returns type: {type(result), result}")
 
 
-def collect_massprops(subject, num_samples=1000, with_tforms=False):
+def collect_massprops(subject, num_samples=3000, with_tforms=False):
     assert subject in ["capsule", "uavwing"], f"invalid massprops subject {subject}"  # new components to study must go here
 
     header = ["subject", "xmin", "xmax", "ymin", "ymax", "zmin", "zmax", "surface_area", "cg_x", "cg_y",
@@ -223,12 +223,12 @@ def collect_massprops(subject, num_samples=1000, with_tforms=False):
 
         header.extend(["HORZ_DIAMETER", "VERT_DIAMETER", "FUSE_CYL_LENGTH", "FLOOR_HEIGHT"])
 
-        with open(fname, "a", newline='') as f:
+        with open(fname, "w", newline='') as f:
             writer = csv.DictWriter(f, fieldnames=header)
             writer.writeheader()
 
-            lbounds = [60, 60, 50, 3]
-            ubounds = [400, 400, 500, 30]
+            lbounds = [60, 60, 70, 3]
+            ubounds = [700, 700, 1000, 30]
             sampler = LatinHypercube(d=len(ubounds), centered=True, seed=42)
             samples = sampler.random(num_samples)
             samples = scale(samples, l_bounds=lbounds, u_bounds=ubounds) 
@@ -239,8 +239,11 @@ def collect_massprops(subject, num_samples=1000, with_tforms=False):
                 set_property(creo_client, capsule, "VERT_DIAMETER", vd)
                 set_property(creo_client, capsule, "FUSE_CYL_LENGTH", tl)
                 set_property(creo_client, capsule, "FLOOR_HEIGHT", fh)
-
-                regenerate(creo_client)
+                try:
+                    regenerate(creo_client)
+                except RuntimeError as e:
+                    print(f"Error. Msg <=> {e}, sample: [hd, vd, tl, fh] = {sample}")
+                    continue
                             
                 bbox = get_bounding_box(creo_client, capsule)
                 mprops = get_massprops(creo_client, capsule)
@@ -272,7 +275,6 @@ def collect_massprops(subject, num_samples=1000, with_tforms=False):
                 }
 
                     #print(f"HORZ_DIAMETER: {hd}, VERT_DIAMETER: {vd}, TUBE_LENGTH: {tl}")
-
                 writer.writerow(res)
 
 

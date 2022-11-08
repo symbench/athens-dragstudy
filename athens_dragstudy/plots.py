@@ -7,12 +7,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-
-def list_str(values):
-    splitted = values.split(",")
-    assert len(splitted) < 4
-    return splitted
-
+from athens_dragstudy.utils import list_str
 
 def scatter_plot3d(data, labels, color_code_by=None, save_as=None):
     fig = plt.figure(figsize=(10, 10))

@@ -31,6 +31,7 @@ def run():
         "drag-runner",
         "plots",
         "drag-exploration",
+        "fuselage-mass-surrogate"
     ]
 
     pos = len(sys.argv)
@@ -59,6 +60,9 @@ def run():
         drag_exploration.run(sys.argv[pos:])
     elif args.command == "plots":
         plots.run(sys.argv[pos:])
+    elif args.command == "fuselage-mass-surrogate":
+        from athens_dragstudy.surrogates import fuselage_mass_surrogate
+        fuselage_mass_surrogate.run(sys.argv[pos:])
     elif args.command == "drag-runner":
         new_parser = argparse.ArgumentParser(
             "DragRunner", formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -95,11 +99,11 @@ def run():
         )
         args = new_parser.parse_args(sys.argv[pos:])
 
-    study_params = ["length"]
+        study_params = ["length"]
 
-    dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip)
-    #dr.set_params_and_run_drag()
-    dr.run_dragmodel()
+        dr = DragRunner(args.vehicle, args.runs, study_params, args.baseline, args.from_zip)
+        #dr.set_params_and_run_drag()
+        dr.run_dragmodel()
 
 
 if __name__ == "__main__":
