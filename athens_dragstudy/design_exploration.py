@@ -8,6 +8,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List
 
+from numpy.testing._private.parameterized import param
 from trimesh.path.polygons import Polygon
 
 import numpy as np
@@ -17,6 +18,7 @@ from creopyson import Client
 from pydantic import BaseModel, Field
 from scipy.stats.qmc import LatinHypercube, scale
 
+from pymoo.core.problem import ElementwiseProblem
 from athens_dragstudy.CoffeeLessDragModel import run_full
 
 
@@ -60,7 +62,7 @@ class SpatialJSONEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
-class DesignSweep:
+class DesignExploration:
     """A design sweep using CREO.
 
     Provided a configuration for sweep, this class runs LHC sampling
@@ -268,14 +270,17 @@ class DesignSweep:
             mass_props["ctr_grav_inertia_tensor"]["z_axis"]["z"],
         ]
 
-    def sweep(self):
-        """Run the sweep with LHC sampling of the parameter ranges"""
+    def run(self):
+        if self.config.get("type", "sweep") == "sweep":
+            self.sweep()
+        elif self.config.get("type") == "optimization":
+            self.optimize()
+
+    def optimize(self):
         changes, lbounds, ubounds = self._sweep_info()
-        sampler = LatinHypercube(
-            d=len(ubounds), centered=True, seed=self.config["random_seed"]
-        )
-        samples = sampler.random(self.config["num_samples"])
-        samples = scale(sample=samples, l_bounds=lbounds, u_bounds=ubounds)
+        self.prepare_experiment()
+
+    def prepare_experiment(self, changes):
         ts = time.localtime()
         save_dir = (
                 self.config["description"]
@@ -287,9 +292,11 @@ class DesignSweep:
         )
         save_dir = Path(self.config["save_root"]).resolve() / save_dir
         os.makedirs(save_dir, exist_ok=True)
+
         with (config_path := save_dir / "config.yaml").open("w") as yaml_file:
             yaml.dump(self.config, yaml_file)
             self.logger.info(f"Config saved in {config_path}")
+
         param_list = []
         for change_dicts in changes:
             for change_dict in change_dicts:
@@ -322,27 +329,44 @@ class DesignSweep:
         snapshot_dir = save_dir / "0"
         os.makedirs(snapshot_dir, exist_ok=True)
         self.run_drag_model(snapshot_dir)
+        return save_dir, params_df
+
+    def _single_evaluation(self, index, changes, save_dir, params_df, x, fail_on_interference=False):
+        snapshot_dir = save_dir / f"{index + 1}"
+        os.makedirs(snapshot_dir, exist_ok=True)
+        try:
+            self.propagate_parameters(changes, x)
+            self._regenerate_assembly()
+            if fail_on_interference:
+                return
+            drags, centers = self.run_drag_model(snapshot_dir)
+            fds = self._compute_forces_at_reference_velocity(drags)
+            fdm_mass_properties = self._get_fdm_mass_properties()
+            params_df.loc[len(params_df)] = list(x) + [
+                *centers,
+                *drags,
+                *fds,
+                *fdm_mass_properties,
+                snapshot_dir.resolve(),
+            ]
+        except Exception as e:
+            with (snapshot_dir / "err.txt").open("w") as err:
+                err.write(str(e))
+                self.logger.error(e)
+
+
+    def sweep(self):
+        """Run the sweep with LHC sampling of the parameter ranges"""
+        changes, lbounds, ubounds = self._sweep_info()
+        sampler = LatinHypercube(
+            d=len(ubounds), centered=True, seed=self.config["random_seed"]
+        )
+        samples = sampler.random(self.config["num_samples"])
+        samples = scale(sample=samples, l_bounds=lbounds, u_bounds=ubounds)
+        save_dir, params_df = self.prepare_experiment(changes)
 
         for j, sample in enumerate(samples):
-            snapshot_dir = save_dir / f"{j + 1}"
-            os.makedirs(snapshot_dir, exist_ok=True)
-            try:
-                self.propagate_parameters(changes, sample)
-                self._regenerate_assembly()
-                drags, centers = self.run_drag_model(snapshot_dir)
-                fds = self._compute_forces_at_reference_velocity(drags)
-                fdm_mass_properties = self._get_fdm_mass_properties()
-                params_df.loc[len(params_df)] = list(sample) + [
-                    *centers,
-                    *drags,
-                    *fds,
-                    *fdm_mass_properties,
-                    snapshot_dir.resolve(),
-                ]
-            except Exception as e:
-                with (snapshot_dir / "err.txt").open("w") as err:
-                    err.write(str(e))
-                    self.logger.error(e)
+            self._single_evaluation(changes=changes, index=j, save_dir=save_dir, params_df=params_df, x=sample)
             if j % 50 == 0:
                 params_df.to_csv(save_dir / "params.csv")
 
@@ -394,7 +418,7 @@ class DesignSweep:
 
 def run(args):
     parser = ArgumentParser(
-        description="Sweep a design in CREO to generate JSON files required and run the drag model"
+        description="Sweep/Optimize a design in CREO to generate JSON files required and run the drag model"
     )
     parser.add_argument("--config-file", help="The sweep configuration file", type=str)
     parser.add_argument("--verbose", help="The verbosity of logs", action="store_true")
@@ -405,10 +429,10 @@ def run(args):
         config_ = yaml.full_load(yaml_config.read().decode("utf-8"))
         if args.verbose:
             config_["loglevel"] = "DEBUG"
-        design = DesignSweep(config_)
-        design.set_original_params()
-        design.sweep()
-        design.set_original_params()
+        exploration = DesignExploration(config_)
+        exploration.set_original_params()
+        exploration.run()
+        exploration.set_original_params()
 
 
 if __name__ == "__main__":
