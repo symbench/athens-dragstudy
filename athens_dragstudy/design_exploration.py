@@ -289,8 +289,21 @@ class DesignExploration:
             xu=ubounds,
         )
         algorithm = NSGA2(pop_size=100)
-        minimize(problem, algorithm, ("n_gen", 50), verbose=True, seed=42)
-        params_df.to_csv(save_dir / "params.csv")
+        out = minimize(problem, algorithm, ("n_gen", 50), verbose=True, seed=42)
+        params_df.to_csv(save_dir / "params-all.csv")
+        if out.X and out.F:
+            pareto_csv_dict = self.get_pareto_csv_dict(params_df.columns, out.X, out.F)
+            params_df.to_csv(save_dir / "pareto-front.csv")
+
+    def get_pareto_csv_dict(self, columns, X, F):
+        pareto_optimal_sets = []
+        for x, y in zip(X, F):
+            res = {}
+            for col in columns:
+                res[col] = x
+            res["mass"] = y[0]
+            res["drag"] = y[1]
+        return res
 
     def prepare_experiment(self, changes):
         ts = time.localtime()
