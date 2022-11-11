@@ -1,25 +1,25 @@
 import json
-from json import JSONEncoder
 import logging
 import os
 import time
 from argparse import ArgumentParser
 from copy import deepcopy
+from json import JSONEncoder
 from pathlib import Path
 from typing import Any, Dict, List
-
-from numpy.testing._private.parameterized import param
-from trimesh.path.polygons import Polygon
 
 import numpy as np
 import pandas as pd
 import yaml
 from creopyson import Client
 from pydantic import BaseModel, Field
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.optimize import minimize
 from scipy.stats.qmc import LatinHypercube, scale
+from trimesh.path.polygons import Polygon
 
-from pymoo.core.problem import ElementwiseProblem
 from athens_dragstudy.CoffeeLessDragModel import run_full
+from athens_dragstudy.optimization_problem import DesignOptimization
 
 
 def get_logger(name, level=logging.DEBUG):
@@ -117,7 +117,9 @@ class DesignExploration:
 
     def to_design_data(self) -> List[ComponentData]:
         """Returns list with necessary rotation/translation/CG terms for every component in the design."""
-        part_paths = self.creoson_client.bom_get_paths(paths=True, get_transforms=True, top_level=True)
+        part_paths = self.creoson_client.bom_get_paths(
+            paths=True, get_transforms=True, top_level=True
+        )
         all_children_paths = part_paths["children"]["children"]
         design_data = []
         for component, component_param in self.design_parameters.items():
@@ -169,9 +171,11 @@ class DesignExploration:
                 creo_prt_file = component_name + ".prt"
                 if creo_prt_file == "BatteryController.prt":  # Quirk with the design
                     continue
+
                 creo_param = self.creoson_client.parameter_list(
                     name=param, file_=creo_prt_file
-                ).pop()
+                )
+                creo_param = creo_param.pop()
                 self.creoson_client.parameter_set(
                     name=creo_param["name"],
                     value=value,
@@ -224,24 +228,20 @@ class DesignExploration:
             DataName=design_data_dict,
             ParaName=design_params_dict,
             include_wing=True,
-            create_plot=True,
+            create_plot=False,
             debug=True,
-            stl_output=True,
+            stl_output=False,
             struct=True,
             save_dir=save_dir,
         )
 
         with (save_dir / "spatial.json").open("w") as json_file:
             json.dump(spatial, json_file, indent=2, cls=SpatialJSONEncoder)
-            self.logger.debug(
-                f"Saved design data in {save_dir / 'spatial.json'}"
-            )
+            self.logger.debug(f"Saved design data in {save_dir / 'spatial.json'}")
 
         with (save_dir / "propo.json").open("w") as json_file:
             json.dump(prop, json_file, indent=2, cls=SpatialJSONEncoder)
-            self.logger.debug(
-                f"Saved design data in {save_dir / 'propo.json'}"
-            )
+            self.logger.debug(f"Saved design data in {save_dir / 'propo.json'}")
 
         return drags, center
 
@@ -251,7 +251,7 @@ class DesignExploration:
         dfs = []
         fuses = list(map(float, fuses))
         for fuse, vel in zip(fuses, [vx, vy, vz]):
-            dfs.append(((fuse / (1000 ** 2)) * (rho * vel ** 2)) / 2)
+            dfs.append(((fuse / (1000**2)) * (rho * vel**2)) / 2)
 
         return dfs
 
@@ -278,14 +278,26 @@ class DesignExploration:
 
     def optimize(self):
         changes, lbounds, ubounds = self._sweep_info()
-        self.prepare_experiment()
+        save_dir, params_df = self.prepare_experiment(changes)
+        problem = DesignOptimization(
+            design=self,
+            changes=changes,
+            params_df=params_df,
+            save_dir=save_dir,
+            nvars=len(lbounds),
+            xl=lbounds,
+            xu=ubounds,
+        )
+        algorithm = NSGA2(pop_size=100)
+        minimize(problem, algorithm, ("n_gen", 50), verbose=True, seed=42)
+        params_df.to_csv(save_dir / "params.csv")
 
     def prepare_experiment(self, changes):
         ts = time.localtime()
         save_dir = (
-                self.config["description"]
-                + f"_{self.config['num_samples']}_on_"
-                + time.strftime("%Y-%m-%d-%H-%M-%S", ts)
+            self.config["description"]
+            + f"_{self.config.get('num_samples', 'optimization')}_on_"
+            + time.strftime("%Y-%m-%d-%H-%M-%S", ts)
         )
         self.logger.info(
             f"All output will be saved in {self.config['save_root']}/{save_dir}"
@@ -303,49 +315,53 @@ class DesignExploration:
                 param_list.append(change_dict["name"] + "_" + change_dict["param"])
         params_df = pd.DataFrame(
             columns=param_list
-                    + [
-                        "x_fuse",
-                        "y_fuse",
-                        "z_fuse",
-                        "X_fuseuu",
-                        "Y_fusevv",
-                        "Z_fuseww",
-                        "fd_x",
-                        "fd_y",
-                        "fd_z",
-                        "mass",
-                        "x_cm",
-                        "y_cm",
-                        "z_cm",
-                        "Ixx",
-                        "Ixy",
-                        "Ixz",
-                        "Iyy",
-                        "Iyz",
-                        "Izz",
-                        "files_location"
-                    ]
+            + [
+                "x_fuse",
+                "y_fuse",
+                "z_fuse",
+                "X_fuseuu",
+                "Y_fusevv",
+                "Z_fuseww",
+                "fd_x",
+                "fd_y",
+                "fd_z",
+                "num_interferences",
+                "mass",
+                "x_cm",
+                "y_cm",
+                "z_cm",
+                "Ixx",
+                "Ixy",
+                "Ixz",
+                "Iyy",
+                "Iyz",
+                "Izz",
+                "files_location",
+            ]
         )
         snapshot_dir = save_dir / "0"
         os.makedirs(snapshot_dir, exist_ok=True)
         self.run_drag_model(snapshot_dir)
         return save_dir, params_df
 
-    def _single_evaluation(self, index, changes, save_dir, params_df, x, fail_on_interference=False):
+    def interferences(self):
+        return self.creoson_client.file_interferences()
+
+    def _single_evaluation(self, index, changes, save_dir, params_df, x):
         snapshot_dir = save_dir / f"{index + 1}"
         os.makedirs(snapshot_dir, exist_ok=True)
         try:
             self.propagate_parameters(changes, x)
             self._regenerate_assembly()
-            if fail_on_interference:
-                return
             drags, centers = self.run_drag_model(snapshot_dir)
             fds = self._compute_forces_at_reference_velocity(drags)
             fdm_mass_properties = self._get_fdm_mass_properties()
+            intfs = self.interferences()
             params_df.loc[len(params_df)] = list(x) + [
                 *centers,
                 *drags,
                 *fds,
+                intfs["num_interferences"],
                 *fdm_mass_properties,
                 snapshot_dir.resolve(),
             ]
@@ -353,7 +369,6 @@ class DesignExploration:
             with (snapshot_dir / "err.txt").open("w") as err:
                 err.write(str(e))
                 self.logger.error(e)
-
 
     def sweep(self):
         """Run the sweep with LHC sampling of the parameter ranges"""
@@ -366,7 +381,13 @@ class DesignExploration:
         save_dir, params_df = self.prepare_experiment(changes)
 
         for j, sample in enumerate(samples):
-            self._single_evaluation(changes=changes, index=j, save_dir=save_dir, params_df=params_df, x=sample)
+            self._single_evaluation(
+                changes=changes,
+                index=j,
+                save_dir=save_dir,
+                params_df=params_df,
+                x=sample,
+            )
             if j % 50 == 0:
                 params_df.to_csv(save_dir / "params.csv")
 
@@ -400,7 +421,7 @@ class DesignExploration:
         ubounds = []
         for key, value in self.config["params"].items():
             assert ("min" in value and "max" in value) or (
-                    "min" not in value or "max" not in value
+                "min" not in value or "max" not in value
             )
             if "min" in value and "max" in value:
                 target_components = []
@@ -437,4 +458,5 @@ def run(args):
 
 if __name__ == "__main__":
     import sys
+
     run(sys.argv[1:])
