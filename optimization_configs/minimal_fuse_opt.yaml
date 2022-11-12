@@ -41,129 +41,98 @@ params:
 
   fuselage_FUSE_CYL_LENGTH:
     min: 100
-    max: 1000
+    max: 500
     components:
       - fuselage
     parameter: FUSE_CYL_LENGTH
 
-  fuselage_FLOOR_CONNECTOR_1_DISP_WIDTH:
-    min: -100
-    max: 100
-    components:
-      - fuselage
-    parameter: FLOOR_CONNECTOR_1_DISP_WIDTH
-
-
-  fuselage_FLOOR_CONNECTOR_1_DISP_LENGTH:
-    min: -150
-    max: 150
-    components:
-      - fuselage
-    parameter: FLOOR_CONNECTOR_1_DISP_LENGTH
-
-
-  fuselage_FLOOR_CONNECTOR_2_DISP_WIDTH:
-    min: -100
-    max: 100
-    components:
-      - fuselage
-    parameter: FLOOR_CONNECTOR_2_DISP_WIDTH
-
-
-  fuselage_FLOOR_CONNECTOR_2_DISP_LENGTH:
-    min: -150
-    max: 150
-    components:
-      - fuselage
-    parameter: FLOOR_CONNECTOR_2_DISP_LENGTH
-
   fuselage_FLOOR_CONNECTOR_3_DISP_WIDTH:
-    min: -100
-    max: 100
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_3_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_3_DISP_LENGTH:
-    min: -150
-    max: 150
+    min: -200
+    max: 200
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_3_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_4_DISP_WIDTH:
-    min: -100
-    max: 100
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_4_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_4_DISP_LENGTH:
-    min: -150
-    max: 150
+    min: -200
+    max: 200
     components:
       - fuselage
-    parameter: FLOOR_CONNECTOR_2_DISP_LENGTH
+    parameter: FLOOR_CONNECTOR_4_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_5_DISP_WIDTH:
-    min: -100
-    max: 100
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_5_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_5_DISP_LENGTH:
-    min: -150
-    max: 150
+    min: -200
+    max: 200
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_5_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_6_DISP_WIDTH:
-    min: -100
-    max: 100
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_6_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_6_DISP_LENGTH:
-    min: -150
-    max: 150
+    min: -200
+    max: 200
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_6_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_7_DISP_WIDTH:
-    min: -100
-    max: 100
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_7_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_7_DISP_LENGTH:
-    min: -150
-    max: 150
+    min: -200
+    max: 200
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_7_DISP_LENGTH
 
 
   fuselage_FLOOR_CONNECTOR_8_DISP_WIDTH:
-    min: -100
-    max: 100
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_8_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_8_DISP_LENGTH:
-    min: -150
-    max: 150
+    min: -200
+    max: 200
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_8_DISP_LENGTH

@@ -35,10 +35,10 @@ class DesignOptimization(ElementwiseProblem):
 
         intfs = self.design.interferences()
         intf_volume = 0
-        if intfs["num_interferences"]:
+        if int(intfs["num_interferences"]):
             intf_volume = sum(
                 interference["interference_volume"]
-                for interference in intfs["interferences"]
+                for interference in intfs.get("interferences", [])
             )
 
         if regeneration_failed:
