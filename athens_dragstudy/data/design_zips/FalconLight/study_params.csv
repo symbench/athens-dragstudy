@@ -1,0 +1,2 @@
+Flight_Path,Requested_Vertical_Speed,Requested_Lateral_Speed,Requested_Vertical_Down_Speed,Requested_Lateral_Acceleration,Requested_Lateral_Deceleration,Requested_Vertical_Acceleration,Requested_Vertical_Deceleration,Q_Position,Q_Velocity,Q_Angular_Velocity,Q_Angles,Ctrl_R,wing_span,wing_tube_length,wing_chord,forward_tube_length,front_horiz_tube_length,front_vert_upper_tube_length,front_vert_lower_tube_length,cargo_mass
+9,-1,16,1,2,-5,-5,5,1,0.5,1,0.5,0.25,600,650,100,200,200,200,200,0.5

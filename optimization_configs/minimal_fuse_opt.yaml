@@ -7,6 +7,8 @@ creoson_host: "localhost"
 creoson_port: "9056"
 parameter_map: "C:\\Users\\umesh\\swri\\athens-dragstudy\\athens_dragstudy\\data\\design_zips\\Minimal\\archive\\result_1\\designParameters.json"
 save_root: "experiments"
+population_size: 100
+num_generations: 50
 fdm:
   Analysis_Type: 3
   Ctrl_R: 0.1
@@ -23,7 +25,7 @@ fdm:
   Requested_Vertical_Speed: 19
 
 random_seed: 42
-loglevel: "INFO"
+loglevel: "ERROR"
 params:
   fuselage_VERT_DIAMETER:
     min: 50
@@ -39,100 +41,136 @@ params:
       - fuselage
     parameter: HORZ_DIAMETER
 
+  fuselage_FLOOR_HEIGHT:
+    min: 4
+    max: 20
+    components:
+      - fuselage
+    parameter: FLOOR_HEIGHT
+
+
   fuselage_FUSE_CYL_LENGTH:
     min: 100
-    max: 500
+    max: 300
     components:
       - fuselage
     parameter: FUSE_CYL_LENGTH
 
-  fuselage_FLOOR_CONNECTOR_3_DISP_WIDTH:
+  fuselage_FLOOR_CONNECTOR_1_DISP_WIDTH:
+    min: -70
+    max: 70
+    components:
+      - fuselage
+    parameter: FLOOR_CONNECTOR_1_DISP_WIDTH
+
+  fuselage_FLOOR_CONNECTOR_1_DISP_LENGTH:
     min: -150
     max: 150
+    components:
+      - fuselage
+    parameter: FLOOR_CONNECTOR_1_DISP_LENGTH
+
+  fuselage_FLOOR_CONNECTOR_2_DISP_WIDTH:
+    min: -70
+    max: 70
+    components:
+      - fuselage
+    parameter: FLOOR_CONNECTOR_2_DISP_WIDTH
+
+  fuselage_FLOOR_CONNECTOR_2_DISP_LENGTH:
+    min: -150
+    max: 150
+    components:
+      - fuselage
+    parameter: FLOOR_CONNECTOR_2_DISP_LENGTH
+
+  fuselage_FLOOR_CONNECTOR_3_DISP_WIDTH:
+    min: -70
+    max: 70
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_3_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_3_DISP_LENGTH:
-    min: -200
-    max: 200
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_3_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_4_DISP_WIDTH:
-    min: -150
-    max: 150
+    min: -70
+    max: 70
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_4_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_4_DISP_LENGTH:
-    min: -200
-    max: 200
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_4_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_5_DISP_WIDTH:
-    min: -150
-    max: 150
+    min: -70
+    max: 70
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_5_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_5_DISP_LENGTH:
-    min: -200
-    max: 200
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_5_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_6_DISP_WIDTH:
-    min: -150
-    max: 150
+    min: -70
+    max: 70
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_6_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_6_DISP_LENGTH:
-    min: -200
-    max: 200
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_6_DISP_LENGTH
 
   fuselage_FLOOR_CONNECTOR_7_DISP_WIDTH:
-    min: -150
-    max: 150
+    min: -70
+    max: 70
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_7_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_7_DISP_LENGTH:
-    min: -200
-    max: 200
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_7_DISP_LENGTH
 
 
   fuselage_FLOOR_CONNECTOR_8_DISP_WIDTH:
-    min: -150
-    max: 150
+    min: -70
+    max: 70
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_8_DISP_WIDTH
 
 
   fuselage_FLOOR_CONNECTOR_8_DISP_LENGTH:
-    min: -200
-    max: 200
+    min: -150
+    max: 150
     components:
       - fuselage
     parameter: FLOOR_CONNECTOR_8_DISP_LENGTH

@@ -70,7 +70,7 @@ def _calculate_drag_params(
     direction="x",
 ):
     diafuse = (horizontal_diameter + vertical_diameter) / 2
-    rot_angle = 90 - bottom_connector_rotation
+    rot_angle = bottom_connector_rotation
     mat = R.from_euler("z", rot_angle, degrees=True)
     Tform = np.hstack((mat.as_matrix(), np.vstack([0, 0, 0])))
 

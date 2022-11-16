@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import dill
+import sys
 import time
 from argparse import ArgumentParser
 from copy import deepcopy
@@ -14,7 +16,7 @@ import yaml
 from creopyson import Client
 from pydantic import BaseModel, Field
 from pymoo.algorithms.moo.nsga2 import NSGA2
-from pymoo.optimize import minimize
+import dill
 from scipy.stats.qmc import LatinHypercube, scale
 from trimesh.path.polygons import Polygon
 
@@ -164,6 +166,7 @@ class DesignExploration:
     def propagate_parameters(self, changes, sample):
         """Propagate parameters for every change from the sample"""
         assert len(changes) == len(sample)
+        params_set = {}
         for all_component_prop_changes, value in zip(changes, sample):
             for comp_param_change in all_component_prop_changes:
                 param = comp_param_change["param"]
@@ -187,6 +190,9 @@ class DesignExploration:
                     f"Set {param} for {component_name} "
                     f"in CREO ( {creo_prt_file}'s {param} = {value} )"
                 )
+                params_set[param] = value
+
+        return params_set
 
     def _regenerate_assembly(self):
         """Regenerate the currently loaded assembly in CREO."""
@@ -210,19 +216,19 @@ class DesignExploration:
             "Successfully regenerated assembly after setting original design parameters"
         )
 
-    def run_drag_model(self, save_dir):
+    def run_drag_model(self, save_dir=None):
         design_data_dict = self.design_data_dict()
         design_params_dict = self.design_parameters_dict()
+        if save_dir:
+            with (save_dir / "designData.json").open("w") as json_file:
+                json.dump(design_data_dict, json_file, indent=2)
+                self.logger.debug(f"Saved design data in {save_dir / 'DesignData.json'}")
 
-        with (save_dir / "designData.json").open("w") as json_file:
-            json.dump(design_data_dict, json_file, indent=2)
-            self.logger.debug(f"Saved design data in {save_dir / 'DesignData.json'}")
-
-        with (save_dir / "designParameters.json").open("w") as json_file:
-            json.dump(design_params_dict, json_file, indent=2)
-            self.logger.debug(
-                f"Saved design data in {save_dir / 'designParameters.json'}"
-            )
+            with (save_dir / "designParameters.json").open("w") as json_file:
+                json.dump(design_params_dict, json_file, indent=2)
+                self.logger.debug(
+                    f"Saved design data in {save_dir / 'designParameters.json'}"
+                )
 
         drags, center, spatial, parameter, structure, prop, J_scale, T_scale = run_full(
             DataName=design_data_dict,
@@ -235,13 +241,14 @@ class DesignExploration:
             save_dir=save_dir,
         )
 
-        with (save_dir / "spatial.json").open("w") as json_file:
-            json.dump(spatial, json_file, indent=2, cls=SpatialJSONEncoder)
-            self.logger.debug(f"Saved design data in {save_dir / 'spatial.json'}")
+        if save_dir:
+            with (save_dir / "spatial.json").open("w") as json_file:
+                json.dump(spatial, json_file, indent=2, cls=SpatialJSONEncoder)
+                self.logger.debug(f"Saved design data in {save_dir / 'spatial.json'}")
 
-        with (save_dir / "propo.json").open("w") as json_file:
-            json.dump(prop, json_file, indent=2, cls=SpatialJSONEncoder)
-            self.logger.debug(f"Saved design data in {save_dir / 'propo.json'}")
+            with (save_dir / "propo.json").open("w") as json_file:
+                json.dump(prop, json_file, indent=2, cls=SpatialJSONEncoder)
+                self.logger.debug(f"Saved design data in {save_dir / 'propo.json'}")
 
         return drags, center
 
@@ -288,22 +295,72 @@ class DesignExploration:
             xl=lbounds,
             xu=ubounds,
         )
-        algorithm = NSGA2(pop_size=100)
-        out = minimize(problem, algorithm, ("n_gen", 50), verbose=True, seed=42)
-        params_df.to_csv(save_dir / "params-all.csv")
-        if out.X and out.F:
-            pareto_csv_dict = self.get_pareto_csv_dict(params_df.columns, out.X, out.F)
-            params_df.to_csv(save_dir / "pareto-front.csv")
+        algorithm = NSGA2(pop_size=self.config["population_size"])
+        algorithm.setup(problem, seed=1, termination=("n_gen", self.config["num_generations"]))
+        # out = minimize(problem, algorithm, ("n_gen", self.config["num_generations"]), verbose=True, seed=42)
+
+        for k in range(self.config["num_generations"]):
+            algorithm.next()
+            self.logger.info(f"Generation {k+1} complete")
+
+            if k % self.config.get("checkpoint_frequency", 5) == 0:
+                with open(save_dir / "ckpt", "wb") as f:
+                    dill.dump(algorithm, f)
+
+        self.save_opt_results(algorithm, problem.params_df, changes, save_dir)
+
+    def save_opt_results(self, algorithm, params_df, changes, save_dir):
+        out = algorithm.result()
+
+        params_df.to_csv(save_dir / "params.csv")
+        if (out.X is not None) and (out.F is not None):
+            pareto_csv_dict = self.get_pareto_csv_dict(changes, out.X, out.F)
+            pareto_df = pd.DataFrame.from_records(pareto_csv_dict)
+            pareto_df.to_csv(save_dir / "pareto-front.csv")
 
     def get_pareto_csv_dict(self, columns, X, F):
         pareto_optimal_sets = []
         for x, y in zip(X, F):
             res = {}
+            count = 0
             for col in columns:
-                res[col] = x
+                for change in col:
+                    res[change["name"] + "_" + change["param"]] = x[count]
+                    count += 1
+
             res["mass"] = y[0]
             res["drag"] = y[1]
-        return res
+            pareto_optimal_sets.append(res)
+
+        return pareto_optimal_sets
+
+    def resume(self):
+        save_dir = Path(self.config["save_dir"]).resolve()
+        changes, _, _ = self._sweep_info()
+        if not (ckpt := (save_dir / "ckpt")).exists():
+            raise FileNotFoundError("No checkpoint file found to resume the algorithm")
+
+        if (save_dir / "params.csv").exists():
+            params_df = pd.read_csv(save_dir / "params.csv")
+        else:
+            params_df = self._get_parameters_df(changes)
+
+        with ckpt.open("rb") as f:
+            algorithm = dill.load(f)
+            self.logger.info(f"Progress {algorithm.termination.perc} %")
+            while algorithm.has_next():
+                algorithm.next()
+                if algorithm.n_gen % self.config.get("checkpoint_frequency", 5) == 0:
+                    with open(save_dir / "ckpt", "wb") as ckpt:
+                        dill.dump(algorithm, ckpt)
+
+        self.save_opt_results(algorithm, params_df, changes, save_dir=save_dir)
+
+
+    # def load_opt_experiment_from_checkpoint(self):
+    #     save_dir = Path(self.config["checkpoint_dir"]).resolve()
+    #     params_df = pd.read_csv(save_dir / "params.csv")
+    #     return params_df, save_dir / "checkpoint"
 
     def prepare_experiment(self, changes):
         ts = time.localtime()
@@ -322,6 +379,13 @@ class DesignExploration:
             yaml.dump(self.config, yaml_file)
             self.logger.info(f"Config saved in {config_path}")
 
+        params_df = self._get_parameters_df(changes)
+        snapshot_dir = save_dir / "0"
+        os.makedirs(snapshot_dir, exist_ok=True)
+        self.run_drag_model(snapshot_dir)
+        return save_dir, params_df
+
+    def _get_parameters_df(self, changes):
         param_list = []
         for change_dicts in changes:
             for change_dict in change_dicts:
@@ -352,10 +416,8 @@ class DesignExploration:
                 "files_location",
             ]
         )
-        snapshot_dir = save_dir / "0"
-        os.makedirs(snapshot_dir, exist_ok=True)
-        self.run_drag_model(snapshot_dir)
-        return save_dir, params_df
+
+        return params_df
 
     def interferences(self):
         return self.creoson_client.file_interferences()
@@ -454,19 +516,39 @@ def run(args):
     parser = ArgumentParser(
         description="Sweep/Optimize a design in CREO to generate JSON files required and run the drag model"
     )
-    parser.add_argument("--config-file", help="The sweep configuration file", type=str)
+    parser.add_argument("command", choices=["begin", "resume"])
+
+    parser.add_argument("--config-file", help="The sweep configuration file", type=str, required="begin" in sys.argv)
+    parser.add_argument("--exp-dir", help="The experiment directory", type=str, required="resume" in sys.argv)
     parser.add_argument("--verbose", help="The verbosity of logs", action="store_true")
 
     args = parser.parse_args(args)
-    config_file = Path(args.config_file)
-    with config_file.open("rb") as yaml_config:
-        config_ = yaml.full_load(yaml_config.read().decode("utf-8"))
-        if args.verbose:
-            config_["loglevel"] = "DEBUG"
-        exploration = DesignExploration(config_)
-        exploration.set_original_params()
-        exploration.run()
-        exploration.set_original_params()
+
+    if args.command == "begin":
+        config_file = Path(args.config_file)
+        with config_file.open("rb") as yaml_config:
+            config_ = yaml.full_load(yaml_config.read().decode("utf-8"))
+            if args.verbose:
+                config_["loglevel"] = "DEBUG"
+            exploration = DesignExploration(config_)
+            exploration.set_original_params()
+            exploration.run()
+            exploration.set_original_params()
+
+    elif args.command == "resume":
+        config_file = Path(args.exp_dir) / "config.yaml"
+        with config_file.open("rb") as yaml_config:
+            config_ = yaml.full_load(yaml_config.read().decode("utf-8"))
+            if args.verbose:
+                config_["loglevel"] = "DEBUG"
+            assert config_["type"] == "optimization", "Cannot resume a sweep"
+            config_["save_dir"] = Path(args.exp_dir)
+            exploration = DesignExploration(config_)
+            exploration.set_original_params()
+            exploration.resume()
+            exploration.set_original_params()
+
+
 
 
 if __name__ == "__main__":
