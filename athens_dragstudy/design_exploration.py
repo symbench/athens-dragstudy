@@ -1,23 +1,27 @@
 import json
-from json import JSONEncoder
 import logging
 import os
+import dill
+import sys
 import time
 from argparse import ArgumentParser
 from copy import deepcopy
+from json import JSONEncoder
 from pathlib import Path
 from typing import Any, Dict, List
-
-from trimesh.path.polygons import Polygon
 
 import numpy as np
 import pandas as pd
 import yaml
 from creopyson import Client
 from pydantic import BaseModel, Field
+from pymoo.algorithms.moo.nsga2 import NSGA2
+import dill
 from scipy.stats.qmc import LatinHypercube, scale
+from trimesh.path.polygons import Polygon
 
 from athens_dragstudy.CoffeeLessDragModel import run_full
+from athens_dragstudy.optimization_problem import DesignOptimization
 
 
 def get_logger(name, level=logging.DEBUG):
@@ -60,7 +64,7 @@ class SpatialJSONEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
-class DesignSweep:
+class DesignExploration:
     """A design sweep using CREO.
 
     Provided a configuration for sweep, this class runs LHC sampling
@@ -115,7 +119,9 @@ class DesignSweep:
 
     def to_design_data(self) -> List[ComponentData]:
         """Returns list with necessary rotation/translation/CG terms for every component in the design."""
-        part_paths = self.creoson_client.bom_get_paths(paths=True, get_transforms=True, top_level=True)
+        part_paths = self.creoson_client.bom_get_paths(
+            paths=True, get_transforms=True, top_level=True
+        )
         all_children_paths = part_paths["children"]["children"]
         design_data = []
         for component, component_param in self.design_parameters.items():
@@ -160,6 +166,7 @@ class DesignSweep:
     def propagate_parameters(self, changes, sample):
         """Propagate parameters for every change from the sample"""
         assert len(changes) == len(sample)
+        params_set = {}
         for all_component_prop_changes, value in zip(changes, sample):
             for comp_param_change in all_component_prop_changes:
                 param = comp_param_change["param"]
@@ -167,9 +174,11 @@ class DesignSweep:
                 creo_prt_file = component_name + ".prt"
                 if creo_prt_file == "BatteryController.prt":  # Quirk with the design
                     continue
+
                 creo_param = self.creoson_client.parameter_list(
                     name=param, file_=creo_prt_file
-                ).pop()
+                )
+                creo_param = creo_param.pop()
                 self.creoson_client.parameter_set(
                     name=creo_param["name"],
                     value=value,
@@ -181,6 +190,9 @@ class DesignSweep:
                     f"Set {param} for {component_name} "
                     f"in CREO ( {creo_prt_file}'s {param} = {value} )"
                 )
+                params_set[param] = value
+
+        return params_set
 
     def _regenerate_assembly(self):
         """Regenerate the currently loaded assembly in CREO."""
@@ -204,42 +216,39 @@ class DesignSweep:
             "Successfully regenerated assembly after setting original design parameters"
         )
 
-    def run_drag_model(self, save_dir):
+    def run_drag_model(self, save_dir=None):
         design_data_dict = self.design_data_dict()
         design_params_dict = self.design_parameters_dict()
+        if save_dir:
+            with (save_dir / "designData.json").open("w") as json_file:
+                json.dump(design_data_dict, json_file, indent=2)
+                self.logger.debug(f"Saved design data in {save_dir / 'DesignData.json'}")
 
-        with (save_dir / "designData.json").open("w") as json_file:
-            json.dump(design_data_dict, json_file, indent=2)
-            self.logger.debug(f"Saved design data in {save_dir / 'DesignData.json'}")
-
-        with (save_dir / "designParameters.json").open("w") as json_file:
-            json.dump(design_params_dict, json_file, indent=2)
-            self.logger.debug(
-                f"Saved design data in {save_dir / 'designParameters.json'}"
-            )
+            with (save_dir / "designParameters.json").open("w") as json_file:
+                json.dump(design_params_dict, json_file, indent=2)
+                self.logger.debug(
+                    f"Saved design data in {save_dir / 'designParameters.json'}"
+                )
 
         drags, center, spatial, parameter, structure, prop, J_scale, T_scale = run_full(
             DataName=design_data_dict,
             ParaName=design_params_dict,
             include_wing=True,
-            create_plot=True,
+            create_plot=False,
             debug=True,
-            stl_output=True,
+            stl_output=False,
             struct=True,
             save_dir=save_dir,
         )
 
-        with (save_dir / "spatial.json").open("w") as json_file:
-            json.dump(spatial, json_file, indent=2, cls=SpatialJSONEncoder)
-            self.logger.debug(
-                f"Saved design data in {save_dir / 'spatial.json'}"
-            )
+        if save_dir:
+            with (save_dir / "spatial.json").open("w") as json_file:
+                json.dump(spatial, json_file, indent=2, cls=SpatialJSONEncoder)
+                self.logger.debug(f"Saved design data in {save_dir / 'spatial.json'}")
 
-        with (save_dir / "propo.json").open("w") as json_file:
-            json.dump(prop, json_file, indent=2, cls=SpatialJSONEncoder)
-            self.logger.debug(
-                f"Saved design data in {save_dir / 'propo.json'}"
-            )
+            with (save_dir / "propo.json").open("w") as json_file:
+                json.dump(prop, json_file, indent=2, cls=SpatialJSONEncoder)
+                self.logger.debug(f"Saved design data in {save_dir / 'propo.json'}")
 
         return drags, center
 
@@ -249,7 +258,7 @@ class DesignSweep:
         dfs = []
         fuses = list(map(float, fuses))
         for fuse, vel in zip(fuses, [vx, vy, vz]):
-            dfs.append(((fuse / (1000 ** 2)) * (rho * vel ** 2)) / 2)
+            dfs.append(((fuse / (1000**2)) * (rho * vel**2)) / 2)
 
         return dfs
 
@@ -268,6 +277,174 @@ class DesignSweep:
             mass_props["ctr_grav_inertia_tensor"]["z_axis"]["z"],
         ]
 
+    def run(self):
+        if self.config.get("type", "sweep") == "sweep":
+            self.sweep()
+        elif self.config.get("type") == "optimization":
+            self.optimize()
+
+    def optimize(self):
+        changes, lbounds, ubounds = self._sweep_info()
+        save_dir, params_df = self.prepare_experiment(changes)
+        problem = DesignOptimization(
+            design=self,
+            changes=changes,
+            params_df=params_df,
+            save_dir=save_dir,
+            nvars=len(lbounds),
+            xl=lbounds,
+            xu=ubounds,
+        )
+        algorithm = NSGA2(pop_size=self.config["population_size"])
+        algorithm.setup(problem, seed=1, termination=("n_gen", self.config["num_generations"]))
+        # out = minimize(problem, algorithm, ("n_gen", self.config["num_generations"]), verbose=True, seed=42)
+
+        for k in range(self.config["num_generations"]):
+            algorithm.next()
+            self.logger.info(f"Generation {k+1} complete")
+
+            if k % self.config.get("checkpoint_frequency", 5) == 0:
+                with open(save_dir / "ckpt", "wb") as f:
+                    dill.dump(algorithm, f)
+
+        self.save_opt_results(algorithm, problem.params_df, changes, save_dir)
+
+    def save_opt_results(self, algorithm, params_df, changes, save_dir):
+        out = algorithm.result()
+
+        params_df.to_csv(save_dir / "params.csv")
+        if (out.X is not None) and (out.F is not None):
+            pareto_csv_dict = self.get_pareto_csv_dict(changes, out.X, out.F)
+            pareto_df = pd.DataFrame.from_records(pareto_csv_dict)
+            pareto_df.to_csv(save_dir / "pareto-front.csv")
+
+    def get_pareto_csv_dict(self, columns, X, F):
+        pareto_optimal_sets = []
+        for x, y in zip(X, F):
+            res = {}
+            count = 0
+            for col in columns:
+                for change in col:
+                    res[change["name"] + "_" + change["param"]] = x[count]
+                    count += 1
+
+            res["mass"] = y[0]
+            res["drag"] = y[1]
+            pareto_optimal_sets.append(res)
+
+        return pareto_optimal_sets
+
+    def resume(self):
+        save_dir = Path(self.config["save_dir"]).resolve()
+        changes, _, _ = self._sweep_info()
+        if not (ckpt := (save_dir / "ckpt")).exists():
+            raise FileNotFoundError("No checkpoint file found to resume the algorithm")
+
+        if (save_dir / "params.csv").exists():
+            params_df = pd.read_csv(save_dir / "params.csv")
+        else:
+            params_df = self._get_parameters_df(changes)
+
+        with ckpt.open("rb") as f:
+            algorithm = dill.load(f)
+            self.logger.info(f"Progress {algorithm.termination.perc} %")
+            while algorithm.has_next():
+                algorithm.next()
+                if algorithm.n_gen % self.config.get("checkpoint_frequency", 5) == 0:
+                    with open(save_dir / "ckpt", "wb") as ckpt:
+                        dill.dump(algorithm, ckpt)
+
+        self.save_opt_results(algorithm, params_df, changes, save_dir=save_dir)
+
+
+    # def load_opt_experiment_from_checkpoint(self):
+    #     save_dir = Path(self.config["checkpoint_dir"]).resolve()
+    #     params_df = pd.read_csv(save_dir / "params.csv")
+    #     return params_df, save_dir / "checkpoint"
+
+    def prepare_experiment(self, changes):
+        ts = time.localtime()
+        save_dir = (
+            self.config["description"]
+            + f"_{self.config.get('num_samples', 'optimization')}_on_"
+            + time.strftime("%Y-%m-%d-%H-%M-%S", ts)
+        )
+        self.logger.info(
+            f"All output will be saved in {self.config['save_root']}/{save_dir}"
+        )
+        save_dir = Path(self.config["save_root"]).resolve() / save_dir
+        os.makedirs(save_dir, exist_ok=True)
+
+        with (config_path := save_dir / "config.yaml").open("w") as yaml_file:
+            yaml.dump(self.config, yaml_file)
+            self.logger.info(f"Config saved in {config_path}")
+
+        params_df = self._get_parameters_df(changes)
+        snapshot_dir = save_dir / "0"
+        os.makedirs(snapshot_dir, exist_ok=True)
+        self.run_drag_model(snapshot_dir)
+        return save_dir, params_df
+
+    def _get_parameters_df(self, changes):
+        param_list = []
+        for change_dicts in changes:
+            for change_dict in change_dicts:
+                param_list.append(change_dict["name"] + "_" + change_dict["param"])
+        params_df = pd.DataFrame(
+            columns=param_list
+            + [
+                "x_fuse",
+                "y_fuse",
+                "z_fuse",
+                "X_fuseuu",
+                "Y_fusevv",
+                "Z_fuseww",
+                "fd_x",
+                "fd_y",
+                "fd_z",
+                "num_interferences",
+                "mass",
+                "x_cm",
+                "y_cm",
+                "z_cm",
+                "Ixx",
+                "Ixy",
+                "Ixz",
+                "Iyy",
+                "Iyz",
+                "Izz",
+                "files_location",
+            ]
+        )
+
+        return params_df
+
+    def interferences(self):
+        return self.creoson_client.file_interferences()
+
+    def _single_evaluation(self, index, changes, save_dir, params_df, x):
+        snapshot_dir = save_dir / f"{index + 1}"
+        os.makedirs(snapshot_dir, exist_ok=True)
+        try:
+            self.propagate_parameters(changes, x)
+            self._regenerate_assembly()
+            drags, centers = self.run_drag_model(snapshot_dir)
+            fds = self._compute_forces_at_reference_velocity(drags)
+            fdm_mass_properties = self._get_fdm_mass_properties()
+            intfs = self.interferences()
+            params_df.loc[len(params_df)] = list(x) + [
+                *centers,
+                *drags,
+                *fds,
+                intfs["num_interferences"],
+                *fdm_mass_properties,
+                snapshot_dir.resolve(),
+            ]
+        except Exception as e:
+            with (snapshot_dir / "err.txt").open("w") as err:
+                err.write(str(e))
+                self.logger.error(e)
+
     def sweep(self):
         """Run the sweep with LHC sampling of the parameter ranges"""
         changes, lbounds, ubounds = self._sweep_info()
@@ -276,73 +453,16 @@ class DesignSweep:
         )
         samples = sampler.random(self.config["num_samples"])
         samples = scale(sample=samples, l_bounds=lbounds, u_bounds=ubounds)
-        ts = time.localtime()
-        save_dir = (
-                self.config["description"]
-                + f"_{self.config['num_samples']}_on_"
-                + time.strftime("%Y-%m-%d-%H-%M-%S", ts)
-        )
-        self.logger.info(
-            f"All output will be saved in {self.config['save_root']}/{save_dir}"
-        )
-        save_dir = Path(self.config["save_root"]).resolve() / save_dir
-        os.makedirs(save_dir, exist_ok=True)
-        with (config_path := save_dir / "config.yaml").open("w") as yaml_file:
-            yaml.dump(self.config, yaml_file)
-            self.logger.info(f"Config saved in {config_path}")
-        param_list = []
-        for change_dicts in changes:
-            for change_dict in change_dicts:
-                param_list.append(change_dict["name"] + "_" + change_dict["param"])
-        params_df = pd.DataFrame(
-            columns=param_list
-                    + [
-                        "x_fuse",
-                        "y_fuse",
-                        "z_fuse",
-                        "X_fuseuu",
-                        "Y_fusevv",
-                        "Z_fuseww",
-                        "fd_x",
-                        "fd_y",
-                        "fd_z",
-                        "mass",
-                        "x_cm",
-                        "y_cm",
-                        "z_cm",
-                        "Ixx",
-                        "Ixy",
-                        "Ixz",
-                        "Iyy",
-                        "Iyz",
-                        "Izz",
-                        "files_location"
-                    ]
-        )
-        snapshot_dir = save_dir / "0"
-        os.makedirs(snapshot_dir, exist_ok=True)
-        self.run_drag_model(snapshot_dir)
+        save_dir, params_df = self.prepare_experiment(changes)
 
         for j, sample in enumerate(samples):
-            snapshot_dir = save_dir / f"{j + 1}"
-            os.makedirs(snapshot_dir, exist_ok=True)
-            try:
-                self.propagate_parameters(changes, sample)
-                self._regenerate_assembly()
-                drags, centers = self.run_drag_model(snapshot_dir)
-                fds = self._compute_forces_at_reference_velocity(drags)
-                fdm_mass_properties = self._get_fdm_mass_properties()
-                params_df.loc[len(params_df)] = list(sample) + [
-                    *centers,
-                    *drags,
-                    *fds,
-                    *fdm_mass_properties,
-                    snapshot_dir.resolve(),
-                ]
-            except Exception as e:
-                with (snapshot_dir / "err.txt").open("w") as err:
-                    err.write(str(e))
-                    self.logger.error(e)
+            self._single_evaluation(
+                changes=changes,
+                index=j,
+                save_dir=save_dir,
+                params_df=params_df,
+                x=sample,
+            )
             if j % 50 == 0:
                 params_df.to_csv(save_dir / "params.csv")
 
@@ -376,7 +496,7 @@ class DesignSweep:
         ubounds = []
         for key, value in self.config["params"].items():
             assert ("min" in value and "max" in value) or (
-                    "min" not in value or "max" not in value
+                "min" not in value or "max" not in value
             )
             if "min" in value and "max" in value:
                 target_components = []
@@ -394,23 +514,44 @@ class DesignSweep:
 
 def run(args):
     parser = ArgumentParser(
-        description="Sweep a design in CREO to generate JSON files required and run the drag model"
+        description="Sweep/Optimize a design in CREO to generate JSON files required and run the drag model"
     )
-    parser.add_argument("--config-file", help="The sweep configuration file", type=str)
+    parser.add_argument("command", choices=["begin", "resume"])
+
+    parser.add_argument("--config-file", help="The sweep configuration file", type=str, required="begin" in sys.argv)
+    parser.add_argument("--exp-dir", help="The experiment directory", type=str, required="resume" in sys.argv)
     parser.add_argument("--verbose", help="The verbosity of logs", action="store_true")
 
     args = parser.parse_args(args)
-    config_file = Path(args.config_file)
-    with config_file.open("rb") as yaml_config:
-        config_ = yaml.full_load(yaml_config.read().decode("utf-8"))
-        if args.verbose:
-            config_["loglevel"] = "DEBUG"
-        design = DesignSweep(config_)
-        design.set_original_params()
-        design.sweep()
-        design.set_original_params()
+
+    if args.command == "begin":
+        config_file = Path(args.config_file)
+        with config_file.open("rb") as yaml_config:
+            config_ = yaml.full_load(yaml_config.read().decode("utf-8"))
+            if args.verbose:
+                config_["loglevel"] = "DEBUG"
+            exploration = DesignExploration(config_)
+            exploration.set_original_params()
+            exploration.run()
+            exploration.set_original_params()
+
+    elif args.command == "resume":
+        config_file = Path(args.exp_dir) / "config.yaml"
+        with config_file.open("rb") as yaml_config:
+            config_ = yaml.full_load(yaml_config.read().decode("utf-8"))
+            if args.verbose:
+                config_["loglevel"] = "DEBUG"
+            assert config_["type"] == "optimization", "Cannot resume a sweep"
+            config_["save_dir"] = Path(args.exp_dir)
+            exploration = DesignExploration(config_)
+            exploration.set_original_params()
+            exploration.resume()
+            exploration.set_original_params()
+
+
 
 
 if __name__ == "__main__":
     import sys
+
     run(sys.argv[1:])

@@ -20,13 +20,13 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 
-from athens_dragstudy import design_sweep, plots
+from athens_dragstudy import design_exploration, plots
 from athens_dragstudy.utils import DragRunner
 
 
 def run():
     commands = [
-        "sweep",
+        "explore",
         "coffeeless-drag-model",
         "drag-runner",
         "plots",
@@ -48,8 +48,8 @@ def run():
     )
     args = parser.parse_args(sys.argv[1:pos])
 
-    if args.command == "sweep":
-        design_sweep.run(sys.argv[pos:])
+    if args.command == "explore":
+        design_exploration.run(sys.argv[pos:])
     elif args.command == "coffeeless-drag-model":
         from athens_dragstudy import CoffeeLessDragModel
 
